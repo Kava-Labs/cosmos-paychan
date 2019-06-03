@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/wire"
+	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 )
 
@@ -15,14 +15,14 @@ import (
 // Keepers contain main business logic of the module.
 type Keeper struct {
 	storeKey   sdk.StoreKey
-	cdc        *wire.Codec // needed to serialize objects before putting them in the store
+	cdc        *codec.Codec // needed to serialize objects before putting them in the store
 	coinKeeper bank.Keeper
 
 	//codespace sdk.CodespaceType TODO custom errors
 }
 
 // NewKeeper returns a new payment channel keeper. This is called when creating new app.
-func NewKeeper(cdc *wire.Codec, key sdk.StoreKey, ck bank.Keeper) Keeper {
+func NewKeeper(cdc *codec.Codec, key sdk.StoreKey, ck bank.Keeper) Keeper {
 	keeper := Keeper{
 		storeKey:   key,
 		cdc:        cdc,

@@ -13,7 +13,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/keys"
 	"github.com/cosmos/cosmos-sdk/client/utils"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/wire"
+	"github.com/cosmos/cosmos-sdk/codec"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 	authctx "github.com/cosmos/cosmos-sdk/x/auth/client/context"
 
@@ -23,7 +23,7 @@ import (
 // list of functions that return pointers to cobra commands
 // No local storage needed for cli acting as a sender
 
-func CreateChannelCmd(cdc *wire.Codec) *cobra.Command {
+func CreateChannelCmd(cdc *codec.Codec) *cobra.Command {
 	flagTo := "to"
 	flagCoins := "amount"
 
@@ -80,7 +80,7 @@ func CreateChannelCmd(cdc *wire.Codec) *cobra.Command {
 	return cmd
 }
 
-func GeneratePaymentCmd(cdc *wire.Codec) *cobra.Command {
+func GeneratePaymentCmd(cdc *codec.Codec) *cobra.Command {
 	flagId := "chan-id"
 	flagReceiverAmount := "rec-amt" // amount the receiver should received on closing the channel
 	flagSenderAmount := "sen-amt"
@@ -142,7 +142,7 @@ func GeneratePaymentCmd(cdc *wire.Codec) *cobra.Command {
 			}}
 
 			// Write out the update
-			jsonUpdate, err := wire.MarshalJSONIndent(cdc, update)
+			jsonUpdate, err := codec.MarshalJSONIndent(cdc, update)
 			if err != nil {
 				return err
 			}
@@ -163,7 +163,7 @@ func GeneratePaymentCmd(cdc *wire.Codec) *cobra.Command {
 	return cmd
 }
 
-func VerifyPaymentCmd(cdc *wire.Codec, paychanStoreName string) *cobra.Command {
+func VerifyPaymentCmd(cdc *codec.Codec, paychanStoreName string) *cobra.Command {
 	flagPaymentFile := "payment"
 
 	cmd := &cobra.Command{
@@ -215,7 +215,7 @@ func VerifyPaymentCmd(cdc *wire.Codec, paychanStoreName string) *cobra.Command {
 	return cmd
 }
 
-func SubmitPaymentCmd(cdc *wire.Codec) *cobra.Command {
+func SubmitPaymentCmd(cdc *codec.Codec) *cobra.Command {
 	flagPaymentFile := "payment"
 
 	cmd := &cobra.Command{
@@ -265,7 +265,7 @@ func SubmitPaymentCmd(cdc *wire.Codec) *cobra.Command {
 	return cmd
 }
 
-func GetChannelCmd(cdc *wire.Codec, paychanStoreName string) *cobra.Command {
+func GetChannelCmd(cdc *codec.Codec, paychanStoreName string) *cobra.Command {
 	flagId := "chan-id"
 	cmd := &cobra.Command{
 		Use:   "get",
@@ -292,7 +292,7 @@ func GetChannelCmd(cdc *wire.Codec, paychanStoreName string) *cobra.Command {
 			cdc.MustUnmarshalBinary(res, &channel)
 
 			// Convert the channel to a json object for pretty printing
-			jsonChannel, err := wire.MarshalJSONIndent(cdc, channel)
+			jsonChannel, err := codec.MarshalJSONIndent(cdc, channel)
 			if err != nil {
 				return err
 			}
@@ -310,7 +310,7 @@ func GetChannelCmd(cdc *wire.Codec, paychanStoreName string) *cobra.Command {
 				cdc.MustUnmarshalBinary(res, &submittedUpdate)
 
 				// Convert the submitted update to a json object for pretty printing
-				jsonSU, err := wire.MarshalJSONIndent(cdc, submittedUpdate)
+				jsonSU, err := codec.MarshalJSONIndent(cdc, submittedUpdate)
 				if err != nil {
 					return err
 				}
