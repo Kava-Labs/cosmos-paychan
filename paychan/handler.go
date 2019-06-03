@@ -1,8 +1,9 @@
 package paychan
 
 import (
+	"fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"reflect"
 )
 
 // NewHandler returns a handler for "paychan" type messages.
@@ -15,7 +16,7 @@ func NewHandler(k Keeper) sdk.Handler {
 		case MsgSubmitUpdate:
 			return handleMsgSubmitUpdate(ctx, k, msg)
 		default:
-			errMsg := "Unrecognized paychan Msg type: " + reflect.TypeOf(msg).Name()
+			errMsg := fmt.Sprintf("unrecognized distribution message type: %T", msg)
 			return sdk.ErrUnknownRequest(errMsg).Result()
 		}
 	}
@@ -45,10 +46,10 @@ func handleMsgSubmitUpdate(ctx sdk.Context, k Keeper, msg MsgSubmitUpdate) sdk.R
 	participants := channel.Participants
 
 	// if only sender signed
-	if reflect.DeepEqual(msg.Submitter, participants[0]) {
+	if msg.Submitter.Equals(participants[0]) {
 		tags, err = k.InitCloseChannelBySender(ctx, msg.Update)
 		// else if receiver signed
-	} else if reflect.DeepEqual(msg.Submitter, participants[len(participants)-1]) {
+	} else if msg.Submitter.Equals(participants[len(participants)-1]) {
 		tags, err = k.CloseChannelByReceiver(ctx, msg.Update)
 	}
 
