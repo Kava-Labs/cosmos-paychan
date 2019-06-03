@@ -9,9 +9,8 @@ This module implements simple but feature complete unidirectional payment channe
 TODO Explain how the payment channels are implemented.
 
 # TODO
-
+ - Update to new Module pattern
  - Documentation - method descriptions, remove unnecessary comments, docs
- - move out of /internal
  - design and implement layer 2 protocol - add in to lcd
 	- sender cli
 	   - create
