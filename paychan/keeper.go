@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 )
 
@@ -16,17 +16,17 @@ import (
 type Keeper struct {
 	storeKey   sdk.StoreKey
 	cdc        *codec.Codec // needed to serialize objects before putting them in the store
-	coinKeeper bank.Keeper
+	bankKeeper bank.Keeper
 
 	//codespace sdk.CodespaceType TODO custom errors
 }
 
 // NewKeeper returns a new payment channel keeper. This is called when creating new app.
-func NewKeeper(cdc *codec.Codec, key sdk.StoreKey, ck bank.Keeper) Keeper {
+func NewKeeper(cdc *codec.Codec, key sdk.StoreKey, bk bank.Keeper) Keeper {
 	keeper := Keeper{
 		storeKey:   key,
 		cdc:        cdc,
-		coinKeeper: ck,
+		bankKeeper: bk,
 		//codespace:  codespace,
 	}
 	return keeper
@@ -46,12 +46,12 @@ func (k Keeper) CreateChannel(ctx sdk.Context, sender sdk.AccAddress, receiver s
 	if !coins.IsValid() {
 		return nil, sdk.ErrInvalidCoins(coins.String())
 	}
-	if !coins.IsPositive() {
+	if !coins.IsAllPositive() {
 		return nil, sdk.ErrInvalidCoins(coins.String())
 	}
 
 	// subtract coins from sender
-	_, tags, err := k.coinKeeper.SubtractCoins(ctx, sender, coins)
+	_, err := k.bankKeeper.SubtractCoins(ctx, sender, coins)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +68,7 @@ func (k Keeper) CreateChannel(ctx sdk.Context, sender sdk.AccAddress, receiver s
 
 	// TODO add to tags
 
-	return tags, err
+	return sdk.EmptyTags(), err
 }
 
 // InitCloseChannelBySender initiates the close of a payment channel, subject to a dispute period.
@@ -105,14 +105,14 @@ func (k Keeper) InitCloseChannelBySender(ctx sdk.Context, update Update) (sdk.Ta
 		// No one has tried to update channel
 		submittedUpdate := SubmittedUpdate{
 			Update:        update,
-			ExecutionTime: ctx.BlockHeight() + ChannelDisputeTime, //TODO check what exactly BlockHeight refers to
+			ExecutionTime: ctx.BlockHeight() + ChannelDisputeTime,
 		}
 		k.addToSubmittedUpdatesQueue(ctx, submittedUpdate)
 	}
 
-	tags := sdk.EmptyTags() // TODO tags
+	// TODO tags
 
-	return tags, nil
+	return sdk.EmptyTags(), nil
 }
 
 // CloseChannelByReceiver immediately closes a payment channel.
@@ -140,7 +140,7 @@ func (k Keeper) CloseChannelByReceiver(ctx sdk.Context, update Update) (sdk.Tags
 	return tags, err
 }
 
-// Main function that compare updates against each other.
+// Main function that compares updates against each other.
 // Pure function, Not needed in unidirectional case.
 // func (k Keeper) applyNewUpdate(existingSUpdate SubmittedUpdate, proposedUpdate Update) SubmittedUpdate {
 // 	var returnUpdate SubmittedUpdate
@@ -190,7 +190,6 @@ func VerifyUpdate(channel Channel, update Update) sdk.Error {
 // It doesn't check if the given update matches an existing channel.
 func (k Keeper) closeChannel(ctx sdk.Context, update Update) (sdk.Tags, sdk.Error) {
 	var err sdk.Error
-	var tags sdk.Tags
 
 	channel, _ := k.getChannel(ctx, update.ChannelID)
 	// TODO check channel exists and participants matches update payout length
@@ -198,7 +197,7 @@ func (k Keeper) closeChannel(ctx sdk.Context, update Update) (sdk.Tags, sdk.Erro
 	// Add coins to sender and receiver
 	// TODO check for possible errors first to avoid coins being half paid out?
 	for i, coins := range update.Payout {
-		_, tags, err = k.coinKeeper.AddCoins(ctx, channel.Participants[i], coins)
+		_, err = k.bankKeeper.AddCoins(ctx, channel.Participants[i], coins)
 		if err != nil {
 			panic(err)
 		}
@@ -206,7 +205,8 @@ func (k Keeper) closeChannel(ctx sdk.Context, update Update) (sdk.Tags, sdk.Erro
 
 	k.deleteChannel(ctx, update.ChannelID)
 
-	return tags, nil
+	// TODO tags
+	return sdk.EmptyTags(), nil
 }
 
 // verifySignatures checks whether the signatures on a given update are correct.
@@ -215,7 +215,7 @@ func verifySignatures(channel Channel, update Update) bool {
 
 	signBytes := update.GetSignBytes()
 
-	address := channel.Participants[0]
+	address := channel.Participants[0] // sender
 	pubKey := update.Sigs[0].PubKey
 	cryptoSig := update.Sigs[0].CryptoSignature
 
@@ -263,7 +263,7 @@ func (k Keeper) getSubmittedUpdatesQueue(ctx sdk.Context) SubmittedUpdatesQueue 
 	var suq SubmittedUpdatesQueue // if the submittedUpdatesQueue not found then return an empty one
 	if bz != nil {
 		// unmarshal
-		k.cdc.MustUnmarshalBinary(bz, &suq)
+		k.cdc.MustUnmarshalBinaryLengthPrefixed(bz, &suq)
 	}
 	return suq
 
@@ -271,7 +271,7 @@ func (k Keeper) getSubmittedUpdatesQueue(ctx sdk.Context) SubmittedUpdatesQueue 
 func (k Keeper) setSubmittedUpdatesQueue(ctx sdk.Context, suq SubmittedUpdatesQueue) {
 	store := ctx.KVStore(k.storeKey)
 	// marshal
-	bz := k.cdc.MustMarshalBinary(suq)
+	bz := k.cdc.MustMarshalBinaryLengthPrefixed(suq)
 	// write to db
 	key := k.getSubmittedUpdatesQueueKey()
 	store.Set(key, bz)
@@ -297,7 +297,7 @@ func (k Keeper) getSubmittedUpdate(ctx sdk.Context, channelID ChannelID) (Submit
 		return sUpdate, false
 	}
 	// unmarshal
-	k.cdc.MustUnmarshalBinary(bz, &sUpdate)
+	k.cdc.MustUnmarshalBinaryLengthPrefixed(bz, &sUpdate)
 	// return
 	return sUpdate, true
 }
@@ -306,7 +306,7 @@ func (k Keeper) getSubmittedUpdate(ctx sdk.Context, channelID ChannelID) (Submit
 func (k Keeper) setSubmittedUpdate(ctx sdk.Context, sUpdate SubmittedUpdate) {
 	store := ctx.KVStore(k.storeKey)
 	// marshal
-	bz := k.cdc.MustMarshalBinary(sUpdate) // panics if something goes wrong
+	bz := k.cdc.MustMarshalBinaryLengthPrefixed(sUpdate) // panics if something goes wrong
 	// write to db
 	key := GetSubmittedUpdateKey(sUpdate.ChannelID)
 	store.Set(key, bz) // panics if something goes wrong
@@ -338,7 +338,7 @@ func (k Keeper) getChannel(ctx sdk.Context, channelID ChannelID) (Channel, bool)
 		return channel, false
 	}
 	// unmarshal
-	k.cdc.MustUnmarshalBinary(bz, &channel)
+	k.cdc.MustUnmarshalBinaryLengthPrefixed(bz, &channel)
 	// return
 	return channel, true
 }
@@ -347,7 +347,7 @@ func (k Keeper) getChannel(ctx sdk.Context, channelID ChannelID) (Channel, bool)
 func (k Keeper) setChannel(ctx sdk.Context, channel Channel) {
 	store := ctx.KVStore(k.storeKey)
 	// marshal
-	bz := k.cdc.MustMarshalBinary(channel) // panics if something goes wrong
+	bz := k.cdc.MustMarshalBinaryLengthPrefixed(channel) // panics if something goes wrong
 	// write to db
 	key := GetChannelKey(channel.ID)
 	store.Set(key, bz) // panics if something goes wrong
@@ -369,11 +369,11 @@ func (k Keeper) getNewChannelID(ctx sdk.Context) ChannelID {
 	if bz == nil {
 		lastID = -1 // TODO is just setting to zero if uninitialized ok?
 	} else {
-		k.cdc.MustUnmarshalBinary(bz, &lastID)
+		k.cdc.MustUnmarshalBinaryLengthPrefixed(bz, &lastID)
 	}
 	// increment to create new one
 	newID := lastID + 1
-	bz = k.cdc.MustMarshalBinary(newID)
+	bz = k.cdc.MustMarshalBinaryLengthPrefixed(newID)
 	// set last channel id again
 	store.Set(getLastChannelIDKey(), bz)
 	// return

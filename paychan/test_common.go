@@ -2,41 +2,43 @@ package paychan
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/mock"
-	//"github.com/stretchr/testify/require"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/cosmos/cosmos-sdk/x/bank"
+	"github.com/cosmos/cosmos-sdk/x/mock"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 )
 
 // Setup an example app with an in memory DB and the required keepers
-// Also create two accounts with 1000KVA
+// Also create two accounts with 1000usd
 // Could do with refactoring
 func createMockApp(accountSeeds []string) (sdk.Context, bank.Keeper, Keeper, []sdk.AccAddress, []crypto.PubKey, []crypto.PrivKey, sdk.Coins) {
 	mApp := mock.NewApp() // creates a half complete app
-	coinKeeper := bank.NewKeeper(mApp.AccountMapper)
+	//bankKeeper := bank.NewKeeper(mApp.AccountMapper)
+	bankKeeper := bank.NewBaseKeeper(mApp.AccountKeeper, mApp.ParamsKeeper.Subspace(bank.DefaultParamspace), bank.DefaultCodespace)
 
 	// create channel keeper
 	keyChannel := sdk.NewKVStoreKey("channel")
-	channelKeeper := NewKeeper(mApp.Cdc, keyChannel, coinKeeper)
+	channelKeeper := NewKeeper(mApp.Cdc, keyChannel, bankKeeper)
 	// could add router for msg tests
 	//mapp.Router().AddRoute("channel", NewHandler(channelKeeper))
 
-	mApp.CompleteSetup([]*sdk.KVStoreKey{keyChannel})
+	mApp.CompleteSetup(keyChannel)
 
 	// create some accounts
-	genAccFunding := sdk.Coins{sdk.NewInt64Coin("KVA", 1000)}
+	genAccFunding := sdk.Coins{sdk.NewInt64Coin("usd", 1000)}
 	genAccs, addrs, pubKeys, privKeys := createTestGenAccounts(accountSeeds, genAccFunding)
 
 	// initialize the app with these accounts
 	mock.SetGenesis(mApp, genAccs)
 
-	mApp.BeginBlock(abci.RequestBeginBlock{}) // going off other module tests
+	// Initialize a new block, and get a context
+	header := abci.Header{Height: mApp.LastBlockHeight() + 1}
+	mApp.BeginBlock(abci.RequestBeginBlock{Header: header})
 	ctx := mApp.BaseApp.NewContext(false, abci.Header{})
 
-	return ctx, coinKeeper, channelKeeper, addrs, pubKeys, privKeys, genAccFunding
+	return ctx, bankKeeper, channelKeeper, addrs, pubKeys, privKeys, genAccFunding
 }
 
 // CreateTestGenAccounts deterministically generates genesis accounts loaded with coins, and returns

@@ -1,9 +1,10 @@
 package paychan
 
 import (
+	"testing"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestKeeper(t *testing.T) {
@@ -30,7 +31,7 @@ func TestKeeper(t *testing.T) {
 				"HappyPath",
 				addrs[senderAccountIndex],
 				addrs[receiverAccountIndex],
-				sdk.Coins{sdk.NewInt64Coin("KVA", 10)},
+				sdk.Coins{sdk.NewInt64Coin("usd", 10)},
 				true,
 				false,
 			},
@@ -38,7 +39,7 @@ func TestKeeper(t *testing.T) {
 				"NilAddress",
 				sdk.AccAddress{},
 				sdk.AccAddress{},
-				sdk.Coins{sdk.NewInt64Coin("KVA", 10)},
+				sdk.Coins{sdk.NewInt64Coin("usd", 10)},
 				false,
 				true,
 			},
@@ -47,14 +48,6 @@ func TestKeeper(t *testing.T) {
 				addrs[senderAccountIndex],
 				addrs[receiverAccountIndex],
 				sdk.Coins{},
-				false,
-				true,
-			},
-			{
-				"NegativeCoins",
-				addrs[senderAccountIndex],
-				addrs[receiverAccountIndex],
-				sdk.Coins{sdk.NewInt64Coin("KVA", -57)},
 				false,
 				true,
 			},
@@ -92,7 +85,7 @@ func TestKeeper(t *testing.T) {
 					assert.True(t, found)
 					assert.Equal(t, expectedChan, createdChan)
 					// check coins deducted from sender
-					assert.Equal(t, genAccFunding.Minus(testCase.coins), coinKeeper.GetCoins(ctx, testCase.sender))
+					assert.Equal(t, genAccFunding.Sub(testCase.coins), coinKeeper.GetCoins(ctx, testCase.sender))
 					// check no coins deducted from receiver
 					assert.Equal(t, genAccFunding, coinKeeper.GetCoins(ctx, testCase.receiver))
 					// check next global channelID incremented
@@ -126,7 +119,7 @@ func TestKeeper(t *testing.T) {
 		)
 		ctx, coinKeeper, channelKeeper, addrs, pubKeys, privKeys, genAccFunding := createMockApp(accountSeeds)
 
-		coins := sdk.Coins{sdk.NewInt64Coin("KVA", 10)}
+		coins := sdk.Coins{sdk.NewInt64Coin("usd", 10)}
 
 		// create new channel
 		channelID := ChannelID(0) // should be 0 as first channel
@@ -138,7 +131,7 @@ func TestKeeper(t *testing.T) {
 		channelKeeper.setChannel(ctx, channel)
 
 		// create closing update
-		payout := Payout{sdk.Coins{sdk.NewInt64Coin("KVA", 3)}, sdk.Coins{sdk.NewInt64Coin("KVA", 7)}}
+		payout := Payout{sdk.Coins{sdk.NewInt64Coin("usd", 3)}, sdk.Coins{sdk.NewInt64Coin("usd", 7)}}
 		update := Update{
 			ChannelID: channelID,
 			Payout:    payout,
@@ -161,9 +154,9 @@ func TestKeeper(t *testing.T) {
 		assert.NoError(t, err)
 		// coins paid out
 		senderPayout := payout[senderAccountIndex]
-		assert.Equal(t, genAccFunding.Plus(senderPayout), coinKeeper.GetCoins(ctx, addrs[senderAccountIndex]))
+		assert.Equal(t, genAccFunding.Add(senderPayout), coinKeeper.GetCoins(ctx, addrs[senderAccountIndex]))
 		receiverPayout := payout[receiverAccountIndex]
-		assert.Equal(t, genAccFunding.Plus(receiverPayout), coinKeeper.GetCoins(ctx, addrs[receiverAccountIndex]))
+		assert.Equal(t, genAccFunding.Add(receiverPayout), coinKeeper.GetCoins(ctx, addrs[receiverAccountIndex]))
 		// channel deleted
 		_, found := channelKeeper.getChannel(ctx, channelID)
 		assert.False(t, found)
@@ -200,14 +193,14 @@ func TestKeeper(t *testing.T) {
 			{
 				"HappyPath",
 				true,
-				testUpdate{chanID, Payout{sdk.Coins{sdk.NewInt64Coin("KVA", 3)}, sdk.Coins{sdk.NewInt64Coin("KVA", 7)}}, senderAccountIndex, senderAccountIndex},
+				testUpdate{chanID, Payout{sdk.Coins{sdk.NewInt64Coin("usd", 3)}, sdk.Coins{sdk.NewInt64Coin("usd", 7)}}, senderAccountIndex, senderAccountIndex},
 				"sameAsSubmited",
 				false,
 			},
 			{
 				"NoChannel",
 				false,
-				testUpdate{chanID, Payout{sdk.Coins{sdk.NewInt64Coin("KVA", 3)}, sdk.Coins{sdk.NewInt64Coin("KVA", 7)}}, senderAccountIndex, senderAccountIndex},
+				testUpdate{chanID, Payout{sdk.Coins{sdk.NewInt64Coin("usd", 3)}, sdk.Coins{sdk.NewInt64Coin("usd", 7)}}, senderAccountIndex, senderAccountIndex},
 				"empty",
 				true,
 			},
@@ -219,37 +212,30 @@ func TestKeeper(t *testing.T) {
 				true,
 			},
 			{
-				"NegativeCoins",
-				true,
-				testUpdate{chanID, Payout{sdk.Coins{sdk.NewInt64Coin("KVA", -5)}, sdk.Coins{sdk.NewInt64Coin("KVA", 15)}}, senderAccountIndex, senderAccountIndex},
-				"empty",
-				true,
-			},
-			{
 				"TooManyCoins",
 				true,
-				testUpdate{chanID, Payout{sdk.Coins{sdk.NewInt64Coin("KVA", 100)}, sdk.Coins{sdk.NewInt64Coin("KVA", 7)}}, senderAccountIndex, senderAccountIndex},
+				testUpdate{chanID, Payout{sdk.Coins{sdk.NewInt64Coin("usd", 100)}, sdk.Coins{sdk.NewInt64Coin("usd", 7)}}, senderAccountIndex, senderAccountIndex},
 				"empty",
 				true,
 			},
 			{
 				"WrongSignature",
 				true,
-				testUpdate{chanID, Payout{sdk.Coins{sdk.NewInt64Coin("KVA", 3)}, sdk.Coins{sdk.NewInt64Coin("KVA", 7)}}, senderAccountIndex, otherAccountIndex},
+				testUpdate{chanID, Payout{sdk.Coins{sdk.NewInt64Coin("usd", 3)}, sdk.Coins{sdk.NewInt64Coin("usd", 7)}}, senderAccountIndex, otherAccountIndex},
 				"empty",
 				true,
 			},
 			{
 				"WrongPubKey",
 				true,
-				testUpdate{chanID, Payout{sdk.Coins{sdk.NewInt64Coin("KVA", 3)}, sdk.Coins{sdk.NewInt64Coin("KVA", 7)}}, otherAccountIndex, senderAccountIndex},
+				testUpdate{chanID, Payout{sdk.Coins{sdk.NewInt64Coin("usd", 3)}, sdk.Coins{sdk.NewInt64Coin("usd", 7)}}, otherAccountIndex, senderAccountIndex},
 				"empty",
 				true,
 			},
 			{
 				"ReceiverSigned",
 				true,
-				testUpdate{chanID, Payout{sdk.Coins{sdk.NewInt64Coin("KVA", 3)}, sdk.Coins{sdk.NewInt64Coin("KVA", 7)}}, receiverAccountIndex, receiverAccountIndex},
+				testUpdate{chanID, Payout{sdk.Coins{sdk.NewInt64Coin("usd", 3)}, sdk.Coins{sdk.NewInt64Coin("usd", 7)}}, receiverAccountIndex, receiverAccountIndex},
 				"empty",
 				true,
 			},
@@ -266,7 +252,7 @@ func TestKeeper(t *testing.T) {
 					channel := Channel{
 						ID:           chanID, // should be 0 as first channel
 						Participants: [2]sdk.AccAddress{addrs[senderAccountIndex], addrs[receiverAccountIndex]},
-						Coins:        sdk.Coins{sdk.NewInt64Coin("KVA", 10)},
+						Coins:        sdk.Coins{sdk.NewInt64Coin("usd", 10)},
 					}
 					channelKeeper.setChannel(ctx, channel)
 				}
