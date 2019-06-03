@@ -31,7 +31,7 @@ type Update struct {
 }
 
 func (u Update) GetSignBytes() []byte {
-	bz, err := msgCdc.MarshalJSON(struct {
+	bz, err := ModuleCdc.MarshalJSON(struct {
 		ChannelID ChannelID
 		Payout    Payout
 	}{
@@ -45,17 +45,18 @@ func (u Update) GetSignBytes() []byte {
 }
 
 type Payout [2]sdk.Coins // a list of coins to be paid to each of Channel.Participants
-func (p Payout) IsNotNegative() bool {
+
+func (p Payout) IsNotNegative() bool { // TODO may not be necessary with new sdk coin types
 	result := true
 	for _, coins := range p {
-		result = result && coins.IsNotNegative()
+		result = result && !coins.IsAnyNegative()
 	}
 	return result
 }
 func (p Payout) Sum() sdk.Coins {
 	var total sdk.Coins
 	for _, coins := range p {
-		total = total.Plus(coins.Sort())
+		total = total.Add(coins.Sort())
 		total = total.Sort()
 	}
 	return total
@@ -109,18 +110,16 @@ type MsgCreate struct {
 	Coins        sdk.Coins
 }
 
-func (msg MsgCreate) Type() string { return "paychan" }
+func (msg MsgCreate) Route() string { return "paychan" }
+func (msg MsgCreate) Type() string  { return "paychan" }
 
 func (msg MsgCreate) GetSignBytes() []byte {
-	bz, err := msgCdc.MarshalJSON(msg)
-	if err != nil {
-		panic(err)
-	}
+	bz := ModuleCdc.MustMarshalJSON(msg)
 	return sdk.MustSortJSON(bz)
 }
 
 func (msg MsgCreate) ValidateBasic() sdk.Error {
-	// Validate msg as an optimisation to avoid all validation going to keeper. It's run before the sigs are checked by the auth module.
+	// Validate msg as an optimization to avoid all validation going to keeper. It's run before the sigs are checked by the auth module.
 	// Validate without external information (such as account balance)
 
 	//TODO implement
@@ -159,13 +158,11 @@ type MsgSubmitUpdate struct {
 	Submitter sdk.AccAddress
 }
 
-func (msg MsgSubmitUpdate) Type() string { return "paychan" }
+func (msg MsgSubmitUpdate) Route() string { return "paychan" }
+func (msg MsgSubmitUpdate) Type() string  { return "paychan" }
 
 func (msg MsgSubmitUpdate) GetSignBytes() []byte {
-	bz, err := msgCdc.MarshalJSON(msg)
-	if err != nil {
-		panic(err)
-	}
+	bz := ModuleCdc.MustMarshalJSON(msg)
 	return sdk.MustSortJSON(bz)
 }
 

@@ -1,9 +1,10 @@
 package paychan
 
 import (
+	"testing"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestSubmittedUpdatesQueue(t *testing.T) {
@@ -28,18 +29,18 @@ func TestSubmittedUpdatesQueue(t *testing.T) {
 
 func TestPayout(t *testing.T) {
 	t.Run("IsNotNegative", func(t *testing.T) {
-		p := Payout{sdk.Coins{sdk.NewInt64Coin("USD", 4), sdk.NewInt64Coin("GBP", 0)}, sdk.Coins{sdk.NewInt64Coin("USD", 129879234), sdk.NewInt64Coin("GBP", 1)}}
+		p := Payout{sdk.Coins{sdk.NewInt64Coin("usd", 4), sdk.NewInt64Coin("gbp", 0)}, sdk.Coins{sdk.NewInt64Coin("usd", 129879234), sdk.NewInt64Coin("gbp", 1)}}
 		assert.True(t, p.IsNotNegative())
 
-		p = Payout{sdk.Coins{sdk.NewInt64Coin("USD", -4), sdk.NewInt64Coin("GBP", 0)}, sdk.Coins{sdk.NewInt64Coin("USD", 129879234), sdk.NewInt64Coin("GBP", 1)}}
-		assert.False(t, p.IsNotNegative())
+		p = Payout{sdk.Coins{sdk.NewInt64Coin("usd", 0), sdk.NewInt64Coin("gbp", 0)}, sdk.Coins{sdk.NewInt64Coin("usd", 129879234), sdk.NewInt64Coin("gbp", 1)}}
+		assert.True(t, p.IsNotNegative())
 	})
 	t.Run("Sum", func(t *testing.T) {
 		p := Payout{
-			sdk.Coins{sdk.NewInt64Coin("EUR", 1), sdk.NewInt64Coin("USD", -5)},
-			sdk.Coins{sdk.NewInt64Coin("EUR", 1), sdk.NewInt64Coin("USD", 100), sdk.NewInt64Coin("GBP", 1)},
+			sdk.Coins{sdk.NewInt64Coin("eur", 1), sdk.NewInt64Coin("usd", 0)},
+			sdk.Coins{sdk.NewInt64Coin("eur", 1), sdk.NewInt64Coin("usd", 100), sdk.NewInt64Coin("gbp", 1)},
 		}
-		expected := sdk.Coins{sdk.NewInt64Coin("EUR", 2), sdk.NewInt64Coin("GBP", 1), sdk.NewInt64Coin("USD", 95)}
+		expected := sdk.Coins{sdk.NewInt64Coin("eur", 2), sdk.NewInt64Coin("gbp", 1), sdk.NewInt64Coin("usd", 100)}
 		assert.Equal(t, expected, p.Sum())
 	})
 }
