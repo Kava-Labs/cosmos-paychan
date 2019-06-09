@@ -1,6 +1,9 @@
 package types
 
 import (
+	"fmt"
+	"strconv"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -10,8 +13,8 @@ type MsgCreate struct {
 	Coins        sdk.Coins
 }
 
-func (msg MsgCreate) Route() string { return "paychan" }
-func (msg MsgCreate) Type() string  { return "paychan" }
+func (msg MsgCreate) Route() string { return RouterKey }
+func (msg MsgCreate) Type() string  { return "create" }
 
 func (msg MsgCreate) GetSignBytes() []byte {
 	bz := ModuleCdc.MustMarshalJSON(msg)
@@ -19,31 +22,17 @@ func (msg MsgCreate) GetSignBytes() []byte {
 }
 
 func (msg MsgCreate) ValidateBasic() sdk.Error {
-	// Validate msg as an optimization to avoid all validation going to keeper. It's run before the sigs are checked by the auth module.
-	// Validate without external information (such as account balance)
-
-	//TODO implement
-
-	/* old logic
-	// check if all fields present / not 0 valued
-	if len(msg.Sender) == 0 {
-		return sdk.ErrInvalidAddress(msg.Sender.String())
+	// check if addresses are ok
+	if msg.Participants[0].Empty() {
+		return sdk.ErrInvalidAddress(msg.Participants[0].String())
 	}
-	if len(msg.Receiver) == 0 {
-		return sdk.ErrInvalidAddress(msg.Receiver.String())
+	if msg.Participants[1].Empty() {
+		return sdk.ErrInvalidAddress(msg.Participants[1].String())
 	}
-	if len(msg.Amount) == 0 {
-		return sdk.ErrInvalidCoins(msg.Amount.String())
+	// Check if coins are sorted, have valid denoms, non zero, non negative
+	if !(msg.Coins.IsValid() && msg.Coins.IsAllPositive()) {
+		return sdk.ErrInvalidCoins(msg.Coins.String())
 	}
-	// Check if coins are sorted, non zero, non negative
-	if !msg.Amount.IsValid() {
-		return sdk.ErrInvalidCoins(msg.Amount.String())
-	}
-	if !msg.Amount.IsPositive() {
-		return sdk.ErrInvalidCoins(msg.Amount.String())
-	}
-	// TODO check if Address valid?
-	*/
 	return nil
 }
 
@@ -58,8 +47,8 @@ type MsgSubmitUpdate struct {
 	Submitter sdk.AccAddress
 }
 
-func (msg MsgSubmitUpdate) Route() string { return "paychan" }
-func (msg MsgSubmitUpdate) Type() string  { return "paychan" }
+func (msg MsgSubmitUpdate) Route() string { return RouterKey }
+func (msg MsgSubmitUpdate) Type() string  { return "submit_update" }
 
 func (msg MsgSubmitUpdate) GetSignBytes() []byte {
 	bz := ModuleCdc.MustMarshalJSON(msg)
@@ -68,31 +57,18 @@ func (msg MsgSubmitUpdate) GetSignBytes() []byte {
 
 func (msg MsgSubmitUpdate) ValidateBasic() sdk.Error {
 
-	// TODO implement
-	/* old logic
-	// check if all fields present / not 0 valued
-	if len(msg.Sender) == 0 {
-		return sdk.ErrInvalidAddress(msg.Sender.String())
-	}
-	if len(msg.Receiver) == 0 {
-		return sdk.ErrInvalidAddress(msg.Receiver.String())
-	}
-	if len(msg.ReceiverAmount) == 0 {
-		return sdk.ErrInvalidCoins(msg.ReceiverAmount.String())
+	// check if submitter address ok
+	if msg.Submitter.Empty() {
+		return sdk.ErrInvalidAddress(msg.Submitter.String())
 	}
 	// check id ≥ 0
-	if msg.Id < 0 {
-		return sdk.ErrInvalidAddress(strconv.Itoa(int(msg.Id))) // TODO implement custom errors
+	if msg.Update.ChannelID < 0 {
+		return sdk.ErrInvalidAddress(strconv.Itoa(int(msg.ChannelID))) // TODO implement custom errors
 	}
-	// Check if coins are sorted, non zero, non negative
-	if !msg.ReceiverAmount.IsValid() {
-		return sdk.ErrInvalidCoins(msg.ReceiverAmount.String())
+	// Check if coins are sorted, have valid denoms, non negative
+	if !msg.Update.Payout.IsValid() || msg.Update.Payout.IsAnyNegative() { // a payout can be zero
+		return sdk.ErrInvalidCoins(fmt.Sprintf("coins in payout invalid: %v", msg.Update.Payout))
 	}
-	if !msg.ReceiverAmount.IsPositive() {
-		return sdk.ErrInvalidCoins(msg.ReceiverAmount.String())
-	}
-	// TODO check if Address valid?
-	*/
 	return nil
 }
 

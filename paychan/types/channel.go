@@ -63,6 +63,14 @@ func (p Payout) IsNotNegative() bool { // TODO may not be necessary with new sdk
 	}
 	return result
 }
+func (p Payout) IsAnyNegative() bool {
+	for _, coins := range p {
+		if coins.IsAnyNegative() {
+			return true
+		}
+	}
+	return false
+}
 func (p Payout) Sum() sdk.Coins {
 	var total sdk.Coins
 	for _, coins := range p {
@@ -70,6 +78,13 @@ func (p Payout) Sum() sdk.Coins {
 		total = total.Sort()
 	}
 	return total
+}
+func (p Payout) IsValid() bool {
+	result := true
+	for _, coins := range p {
+		result = result && coins.IsValid()
+	}
+	return result
 }
 
 type UpdateSignature struct {
