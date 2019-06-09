@@ -6,7 +6,7 @@ import (
 
 // MsgCreate is for creating a payment channel.
 type MsgCreate struct {
-	Participants [2]sdk.AccAddress
+	Participants [2]sdk.AccAddress // sender, receiver
 	Coins        sdk.Coins
 }
 

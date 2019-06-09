@@ -1,20 +1,22 @@
 package cli
 
 import (
-
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/spf13/cobra"
-	"github.com/cosmos/cosmos-sdk/client/utils"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/context"
+	"github.com/cosmos/cosmos-sdk/client/utils"
+	"github.com/cosmos/cosmos-sdk/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/auth"
+	"github.com/spf13/cobra"
 
-	//"github.com/kava-labs/cosmos-sdk-paychan/paychan/types"
+	"github.com/kava-labs/cosmos-sdk-paychan/paychan/types"
 )
 
 // GetTxCmd returns the transaction commands for this module
 func GetTxCmd(storeKey string, cdc *codec.Codec) *cobra.Command {
 	txCmd := &cobra.Command{
-		Use:   "paychan", // or types.ModuleName,
-		Short: "Paychan transactions subcommands",
+		Use:                        types.ModuleName,
+		Short:                      "Paychan transactions subcommands",
 		DisableFlagParsing:         true,
 		SuggestionsMinimumDistance: 2,
 		RunE:                       utils.ValidateCmd,
@@ -32,62 +34,45 @@ func GetTxCmd(storeKey string, cdc *codec.Codec) *cobra.Command {
 	return txCmd
 }
 
-
 func GetCmd_CreateChannel(cdc *codec.Codec) *cobra.Command {
-	flagTo := "to"
-	flagCoins := "amount"
-
-	cmd := &cobra.Command{
-		Use:   "create",
+	return &cobra.Command{
+		Use:   "create [receiver-address] [amount]",
 		Short: "Create a new payment channel",
 		Long:  "Create a new unidirectional payment channel from a local address to a remote address, funded with some amount of coins. These coins are removed from the sender account and put into the channel.",
-		Args:  cobra.NoArgs,
-		// RunE: func(cmd *cobra.Command, args []string) error {
+		Args:  cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Create cli helpers
+			txBldr := auth.NewTxBuilderFromCLI().WithTxEncoder(auth.DefaultTxEncoder(cdc))
+			cliCtx := context.NewCLIContext().
+				WithCodec(cdc).
+				WithAccountDecoder(cdc)
 
-		// 	// Create a tx and cli "contexts": structs populated with info from common flags.
-		// 	txCtx := authctx.NewTxContextFromCLI().WithCodec(cdc)
-		// 	cliCtx := context.NewCLIContext().
-		// 		WithCodec(cdc).
-		// 		WithLogger(os.Stdout).
-		// 		WithAccountDecoder(authcmd.GetAccountDecoder(cdc))
+			// Parse inputs
+			receiverAddr, err := sdk.AccAddressFromBech32(args[0])
+			if err != nil {
+				return err
+			}
 
-		// 	// Get sender address
-		// 	sender, err := cliCtx.GetFromAddress()
-		// 	if err != nil {
-		// 		return err
-		// 	}
+			amount, err := sdk.ParseCoins(args[1])
+			if err != nil {
+				return err
+			}
 
-		// 	// Get receiver address
-		// 	toStr := viper.GetString(flagTo)
-		// 	receiver, err := sdk.AccAddressFromBech32(toStr)
-		// 	if err != nil {
-		// 		return err
-		// 	}
+			// Create msg
+			senderAddr := cliCtx.GetFromAddress()
 
-		// 	// Get channel funding amount
-		// 	coinsString := viper.GetString(flagCoins)
-		// 	coins, err := sdk.ParseCoins(coinsString)
-		// 	if err != nil {
-		// 		return err
-		// 	}
+			msg := types.MsgCreate{
+				Participants: [2]sdk.AccAddress{senderAddr, receiverAddr},
+				Coins:        amount,
+			}
+			err = msg.ValidateBasic()
+			if err != nil {
+				return err
+			}
 
-		// 	// Create the create channel msg to send
-		// 	msg := paychan.MsgCreate{
-		// 		Participants: [2]sdk.AccAddress{sender, receiver},
-		// 		Coins:        coins,
-		// 	}
-		// 	err = msg.ValidateBasic()
-		// 	if err != nil {
-		// 		return err
-		// 	}
-
-		// 	// Build and sign the transaction, then broadcast to the blockchain
-		// 	return utils.SendTx(txCtx, cliCtx, []sdk.Msg{msg})
-		// },
+			return utils.GenerateOrBroadcastMsgs(cliCtx, txBldr, []sdk.Msg{msg})
+		},
 	}
-	cmd.Flags().String(flagTo, "", "Recipient address of the payment channel.")
-	cmd.Flags().String(flagCoins, "", "Amount of coins to fund the payment channel with.")
-	return cmd
 }
 
 func GeneratePaymentCmd(cdc *codec.Codec) *cobra.Command {
@@ -232,7 +217,7 @@ func GetCmd_SubmitPayment(cdc *codec.Codec) *cobra.Command {
 		Use:   "submit",
 		Short: "Submit a payment to the blockchain to close the channel.",
 		//Long:  fmt.Sprintf("Submit a payment to the blockchain to either close a channel immediately (if you are the receiver) or after a dispute period of %d blocks (if you are the sender).", paychan.ChannelDisputeTime),
-		Args:  cobra.NoArgs,
+		Args: cobra.NoArgs,
 		// RunE: func(cmd *cobra.Command, args []string) error {
 
 		// 	// Create a tx and cli "contexts": structs populated with info from common flags.
