@@ -43,8 +43,10 @@ func handleMsgSubmitUpdate(ctx sdk.Context, k Keeper, msg types.MsgSubmitUpdate)
 	var err sdk.Error
 	tags := sdk.EmptyTags()
 
-	// TODO refactor signer detection - move to keeper or find nicer setup
-	channel, _ := k.getChannel(ctx, msg.Update.ChannelID)
+	channel, found := k.getChannel(ctx, msg.Update.ChannelID)
+	if !found {
+		return sdk.ErrInternal("channel not found").Result()
+	}
 	participants := channel.Participants
 
 	// if only sender signed
@@ -53,6 +55,8 @@ func handleMsgSubmitUpdate(ctx sdk.Context, k Keeper, msg types.MsgSubmitUpdate)
 		// else if receiver signed
 	} else if msg.Submitter.Equals(participants[len(participants)-1]) {
 		tags, err = k.CloseChannelByReceiver(ctx, msg.Update)
+	} else {
+		return sdk.ErrInternal("update submitter does not match channel sender or receiver").Result()
 	}
 
 	if err != nil {
