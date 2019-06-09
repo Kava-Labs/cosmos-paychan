@@ -53,7 +53,7 @@ func GetCmd_GetChannel(storeKey string, cdc *codec.Codec) *cobra.Command {
 				return fmt.Errorf("No channel found with id %s", channelID)
 			}
 			var channel types.Channel
-			if err := cdc.UnmarshalJSON(res, &channel); err != nil {
+			if err := cdc.UnmarshalBinaryLengthPrefixed(res, &channel); err != nil {
 				return err
 			}
 
@@ -86,7 +86,7 @@ func GetCmd_GetSubmittedUpdate(storeKey string, cdc *codec.Codec) *cobra.Command
 				return fmt.Errorf("No submitted update found for channel with id %s", channelID)
 			}
 			var sUpdate types.SubmittedUpdate
-			if err := cdc.UnmarshalJSON(res, &sUpdate); err != nil {
+			if err := cdc.UnmarshalBinaryLengthPrefixed(res, &sUpdate); err != nil {
 				return err
 			}
 

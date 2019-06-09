@@ -44,7 +44,7 @@ func (AppModuleBasic) ValidateGenesis(bz json.RawMessage) error { return nil }
 
 // register rest routes
 func (AppModuleBasic) RegisterRESTRoutes(ctx context.CLIContext, rtr *mux.Router) {
-	rest.RegisterRoutes(ctx, rtr) // maybe store key
+	rest.RegisterRoutes(ctx, rtr, StoreKey)
 }
 
 // get the root tx command of this module
