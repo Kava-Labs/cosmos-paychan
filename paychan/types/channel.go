@@ -56,13 +56,6 @@ func (u Update) GetSignBytes() []byte {
 
 type Payout [2]sdk.Coins // a list of coins to be paid to each of Channel.Participants
 
-func (p Payout) IsNotNegative() bool { // TODO may not be necessary with new sdk coin types
-	result := true
-	for _, coins := range p {
-		result = result && !coins.IsAnyNegative()
-	}
-	return result
-}
 func (p Payout) IsAnyNegative() bool {
 	for _, coins := range p {
 		if coins.IsAnyNegative() {

@@ -173,7 +173,7 @@ func VerifyUpdate(channel types.Channel, update types.Update) sdk.Error {
 		}
 	}
 	// Check payout coins are each not negative (can be zero though)
-	if !update.Payout.IsNotNegative() {
+	if update.Payout.IsAnyNegative() {
 		return sdk.ErrInternal("Payout cannot be negative")
 	}
 	// Check payout sums to match channel.Coins
