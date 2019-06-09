@@ -5,7 +5,14 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/module"
 	abci "github.com/tendermint/tendermint/abci/types"
+	"github.com/gorilla/mux"
+	"github.com/spf13/cobra"
+	"github.com/cosmos/cosmos-sdk/client/context"
+
+	"github.com/kava-labs/cosmos-sdk-paychan/paychan/client/cli"
+	"github.com/kava-labs/cosmos-sdk-paychan/paychan/client/rest"
 )
 
 const ModuleName = "paychan"
@@ -18,7 +25,7 @@ const StoreKey = ModuleName
 type AppModuleBasic struct{}
 
 // check it implements the interface at compile time
-var _ sdk.AppModuleBasic = AppModuleBasic{}
+var _ module.AppModuleBasic = AppModuleBasic{}
 
 // module name
 func (AppModuleBasic) Name() string { return ModuleName }
@@ -32,6 +39,22 @@ func (AppModuleBasic) DefaultGenesis() json.RawMessage { return nil }
 // module validate genesis
 func (AppModuleBasic) ValidateGenesis(bz json.RawMessage) error { return nil }
 
+
+// register rest routes
+func (AppModuleBasic) RegisterRESTRoutes(ctx context.CLIContext, rtr *mux.Router) {
+	rest.RegisterRoutes(ctx, rtr ) // maybe store key
+}
+
+// get the root tx command of this module
+func (AppModuleBasic) GetTxCmd(cdc *codec.Codec) *cobra.Command {
+	return cli.GetTxCmd(StoreKey, cdc)
+}
+
+// get the root query command of this module
+func (AppModuleBasic) GetQueryCmd(cdc *codec.Codec) *cobra.Command {
+	return cli.GetQueryCmd(cdc) // TODO storekey?
+}
+
 // ---------- AppModule ----------
 
 // AppModule
@@ -39,6 +62,9 @@ type AppModule struct {
 	AppModuleBasic
 	keeper Keeper
 }
+
+// check it implements the interface at compile time
+var _ module.AppModule = AppModule{}
 
 // NewAppModule creates a new AppModule object
 func NewAppModule(keeper Keeper) AppModule {

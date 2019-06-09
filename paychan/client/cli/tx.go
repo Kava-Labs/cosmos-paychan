@@ -1,16 +1,37 @@
 package cli
 
 import (
-	"fmt"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/spf13/cobra"
+	"github.com/cosmos/cosmos-sdk/client/utils"
+	"github.com/cosmos/cosmos-sdk/client"
 
-	"github.com/kava-labs/cosmos-sdk-paychan/paychan"
+	//"github.com/kava-labs/cosmos-sdk-paychan/paychan/types"
 )
 
-// list of functions that return pointers to cobra commands
-// No local storage needed for cli acting as a sender
+// GetTxCmd returns the transaction commands for this module
+func GetTxCmd(storeKey string, cdc *codec.Codec) *cobra.Command {
+	txCmd := &cobra.Command{
+		Use:   "paychan", // or types.ModuleName,
+		Short: "Paychan transactions subcommands",
+		DisableFlagParsing:         true,
+		SuggestionsMinimumDistance: 2,
+		RunE:                       utils.ValidateCmd,
+	}
+
+	txCmd.AddCommand(client.PostCommands(
+		GetCmd_CreateChannel(cdc),
+		GetCmd_SubmitPayment(cdc), // TODO do any of these need storekeys?
+	)...)
+
+	// TODO where do these go?
+	// GeneratePaymentCmd
+	// VerifyPaymentCmd
+
+	return txCmd
+}
+
 
 func GetCmd_CreateChannel(cdc *codec.Codec) *cobra.Command {
 	flagTo := "to"
@@ -210,7 +231,7 @@ func GetCmd_SubmitPayment(cdc *codec.Codec) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "submit",
 		Short: "Submit a payment to the blockchain to close the channel.",
-		Long:  fmt.Sprintf("Submit a payment to the blockchain to either close a channel immediately (if you are the receiver) or after a dispute period of %d blocks (if you are the sender).", paychan.ChannelDisputeTime),
+		//Long:  fmt.Sprintf("Submit a payment to the blockchain to either close a channel immediately (if you are the receiver) or after a dispute period of %d blocks (if you are the sender).", paychan.ChannelDisputeTime),
 		Args:  cobra.NoArgs,
 		// RunE: func(cmd *cobra.Command, args []string) error {
 

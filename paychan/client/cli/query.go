@@ -3,7 +3,28 @@ package cli
 import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/spf13/cobra"
+	"github.com/cosmos/cosmos-sdk/client/utils"
+	"github.com/cosmos/cosmos-sdk/client"
+
+	//"github.com/kava-labs/cosmos-sdk-paychan/paychan/types"
 )
+
+// GetQueryCmd returns the cli query commands for this module
+func GetQueryCmd(cdc *codec.Codec) *cobra.Command {
+	queryCmd := &cobra.Command{
+		Use:   "paychan", // or types.ModuleName
+		Short: "Querying commands for the paychan module",
+		DisableFlagParsing:         true,
+		SuggestionsMinimumDistance: 2,
+		RunE:                       utils.ValidateCmd,
+	}
+
+	queryCmd.AddCommand(client.GetCommands( // TODO should this be a separate subcommand?
+			GetCmd_QueryChannel(cdc),
+		)...)
+
+	return queryCmd
+}
 
 func GetCmd_QueryChannel(cdc *codec.Codec /*paychanStoreName string*/) *cobra.Command {
 	flagId := "chan-id"
