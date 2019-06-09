@@ -38,7 +38,7 @@ func getChannelHandlerFn(cliCtx context.CLIContext, storeKey string) http.Handle
 			return
 		}
 		if len(res) == 0 {
-			rest.WriteErrorResponse(w, http.StatusNotFound, fmt.Sprintf("No channel found with id %s", channelID))
+			rest.WriteErrorResponse(w, http.StatusNotFound, fmt.Sprintf("No channel found with id %v", channelID))
 		}
 
 		// Print response
@@ -67,7 +67,7 @@ func getUpdateHandlerFn(cliCtx context.CLIContext, storeKey string) http.Handler
 			return
 		}
 		if len(res) == 0 {
-			rest.WriteErrorResponse(w, http.StatusNotFound, fmt.Sprintf("No submitted update found for channel with id %s", channelID))
+			rest.WriteErrorResponse(w, http.StatusNotFound, fmt.Sprintf("No submitted update found for channel with id %v", channelID))
 		}
 
 		// Print response
