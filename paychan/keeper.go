@@ -277,6 +277,8 @@ func (k Keeper) setSubmittedUpdatesQueue(ctx sdk.Context, suq types.SubmittedUpd
 	key := k.getSubmittedUpdatesQueueKey()
 	store.Set(key, bz)
 }
+
+// TODO should this move into keys or stay here? external parties shouldn't need to query the queue
 func (k Keeper) getSubmittedUpdatesQueueKey() []byte {
 	return []byte("submittedUpdatesQueue")
 }
@@ -377,6 +379,7 @@ func (k Keeper) getNewChannelID(ctx sdk.Context) types.ChannelID {
 }
 
 // getLastChannelIDKey returns the store key used for the global id counter.
+// TODO should this move to types? external parties shouldn't need to query this
 func getLastChannelIDKey() []byte {
 	return []byte("lastChannelID")
 }

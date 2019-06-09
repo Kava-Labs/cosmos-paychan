@@ -5,6 +5,8 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/kava-labs/cosmos-sdk-paychan/paychan/types"
 )
 
 func TestEndBlocker(t *testing.T) {
@@ -18,8 +20,8 @@ func TestEndBlocker(t *testing.T) {
 	coins := sdk.Coins{sdk.NewInt64Coin("usd", 10)}
 
 	// create new channel
-	channelID := ChannelID(0) // should be 0 as first channel
-	channel := Channel{
+	channelID := types.ChannelID(0) // should be 0 as first channel
+	channel := types.Channel{
 		ID:           channelID,
 		Participants: [2]sdk.AccAddress{sender, receiver},
 		Coins:        coins,
@@ -27,17 +29,17 @@ func TestEndBlocker(t *testing.T) {
 	channelKeeper.setChannel(ctx, channel)
 
 	// create closing update and submittedUpdate
-	payout := Payout{sdk.Coins{sdk.NewInt64Coin("usd", 3)}, sdk.Coins{sdk.NewInt64Coin("usd", 7)}}
-	update := Update{
+	payout := types.Payout{sdk.Coins{sdk.NewInt64Coin("usd", 3)}, sdk.Coins{sdk.NewInt64Coin("usd", 7)}}
+	update := types.Update{
 		ChannelID: channelID,
 		Payout:    payout,
 	}
-	sUpdate := SubmittedUpdate{
+	sUpdate := types.SubmittedUpdate{
 		Update:        update,
 		ExecutionTime: 0, // current blocktime
 	}
 	// Set empty submittedUpdatesQueue TODO work out proper genesis initialisation
-	channelKeeper.setSubmittedUpdatesQueue(ctx, SubmittedUpdatesQueue{})
+	channelKeeper.setSubmittedUpdatesQueue(ctx, types.SubmittedUpdatesQueue{})
 	// flag channel for closure
 	channelKeeper.addToSubmittedUpdatesQueue(ctx, sUpdate)
 
@@ -52,7 +54,7 @@ func TestEndBlocker(t *testing.T) {
 	assert.False(t, found)
 	// check queue is empty, NOTE: due to encoding, an empty queue (underneath just an int slice) will be decoded as nil slice rather than an empty slice
 	suq := channelKeeper.getSubmittedUpdatesQueue(ctx)
-	assert.Equal(t, SubmittedUpdatesQueue(nil), suq)
+	assert.Equal(t, types.SubmittedUpdatesQueue(nil), suq)
 	// check submittedUpdate is gone
 	_, found = channelKeeper.getSubmittedUpdate(ctx, channelID)
 	assert.False(t, found)

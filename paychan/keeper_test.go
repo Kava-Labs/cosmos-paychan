@@ -5,6 +5,8 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/kava-labs/cosmos-sdk-paychan/paychan/types"
 )
 
 func TestKeeper(t *testing.T) {
@@ -71,11 +73,11 @@ func TestKeeper(t *testing.T) {
 					assert.NoError(t, err)
 				}
 				// Check if channel exists and is correct
-				channelID := ChannelID(0) // should be 0 as first channel
+				channelID := types.ChannelID(0) // should be 0 as first channel
 				createdChan, found := channelKeeper.getChannel(ctx, channelID)
 
 				if testCase.shouldCreateChannel {
-					expectedChan := Channel{
+					expectedChan := types.Channel{
 						ID:           channelID,
 						Participants: [2]sdk.AccAddress{testCase.sender, testCase.receiver},
 						Coins:        testCase.coins,
@@ -89,17 +91,17 @@ func TestKeeper(t *testing.T) {
 					// check no coins deducted from receiver
 					assert.Equal(t, genAccFunding, coinKeeper.GetCoins(ctx, testCase.receiver))
 					// check next global channelID incremented
-					assert.Equal(t, ChannelID(1), channelKeeper.getNewChannelID(ctx))
+					assert.Equal(t, types.ChannelID(1), channelKeeper.getNewChannelID(ctx))
 				} else {
 					// channel doesn't exist
 					assert.False(t, found)
-					assert.Equal(t, Channel{}, createdChan)
+					assert.Equal(t, types.Channel{}, createdChan)
 					// check no coins deducted from sender
 					assert.Equal(t, genAccFunding, coinKeeper.GetCoins(ctx, addrs[senderAccountIndex]))
 					// check no coins deducted from receiver
 					assert.Equal(t, genAccFunding, coinKeeper.GetCoins(ctx, addrs[receiverAccountIndex]))
 					// check next global channelID not incremented
-					assert.Equal(t, ChannelID(0), channelKeeper.getNewChannelID(ctx))
+					assert.Equal(t, types.ChannelID(0), channelKeeper.getNewChannelID(ctx))
 				}
 			})
 		}
@@ -122,8 +124,8 @@ func TestKeeper(t *testing.T) {
 		coins := sdk.Coins{sdk.NewInt64Coin("usd", 10)}
 
 		// create new channel
-		channelID := ChannelID(0) // should be 0 as first channel
-		channel := Channel{
+		channelID := types.ChannelID(0) // should be 0 as first channel
+		channel := types.Channel{
 			ID:           channelID,
 			Participants: [2]sdk.AccAddress{addrs[senderAccountIndex], addrs[receiverAccountIndex]},
 			Coins:        coins,
@@ -131,20 +133,20 @@ func TestKeeper(t *testing.T) {
 		channelKeeper.setChannel(ctx, channel)
 
 		// create closing update
-		payout := Payout{sdk.Coins{sdk.NewInt64Coin("usd", 3)}, sdk.Coins{sdk.NewInt64Coin("usd", 7)}}
-		update := Update{
+		payout := types.Payout{sdk.Coins{sdk.NewInt64Coin("usd", 3)}, sdk.Coins{sdk.NewInt64Coin("usd", 7)}}
+		update := types.Update{
 			ChannelID: channelID,
 			Payout:    payout,
 			// empty sig
 		}
 		cryptoSig, _ := privKeys[senderAccountIndex].Sign(update.GetSignBytes())
-		update.Sigs = [1]UpdateSignature{UpdateSignature{
+		update.Sigs = [1]types.UpdateSignature{types.UpdateSignature{
 			PubKey:          pubKeys[senderAccountIndex],
 			CryptoSignature: cryptoSig,
 		}}
 
 		// Set empty submittedUpdatesQueue TODO work out proper genesis initialisation
-		channelKeeper.setSubmittedUpdatesQueue(ctx, SubmittedUpdatesQueue{})
+		channelKeeper.setSubmittedUpdatesQueue(ctx, types.SubmittedUpdatesQueue{})
 
 		// ACTION
 		_, err := channelKeeper.CloseChannelByReceiver(ctx, update)
@@ -175,11 +177,11 @@ func TestKeeper(t *testing.T) {
 			receiverAccountIndex int = 1
 			otherAccountIndex    int = 2
 		)
-		chanID := ChannelID(0)
+		chanID := types.ChannelID(0)
 
 		type testUpdate struct { // A parameterised version of an Update for use in specifying test cases.
-			channelID          ChannelID // channelID of submitted update
-			payout             Payout    // payout of submitted update
+			channelID          types.ChannelID // channelID of submitted update
+			payout             types.Payout    // payout of submitted update
 			pubKeyAccountIndex int       // pubkey of signature of submitted update
 			sigAccountIndex    int       // crypto signature of signature of submitted update
 		}
@@ -193,49 +195,49 @@ func TestKeeper(t *testing.T) {
 			{
 				"HappyPath",
 				true,
-				testUpdate{chanID, Payout{sdk.Coins{sdk.NewInt64Coin("usd", 3)}, sdk.Coins{sdk.NewInt64Coin("usd", 7)}}, senderAccountIndex, senderAccountIndex},
+				testUpdate{chanID, types.Payout{sdk.Coins{sdk.NewInt64Coin("usd", 3)}, sdk.Coins{sdk.NewInt64Coin("usd", 7)}}, senderAccountIndex, senderAccountIndex},
 				"sameAsSubmited",
 				false,
 			},
 			{
 				"NoChannel",
 				false,
-				testUpdate{chanID, Payout{sdk.Coins{sdk.NewInt64Coin("usd", 3)}, sdk.Coins{sdk.NewInt64Coin("usd", 7)}}, senderAccountIndex, senderAccountIndex},
+				testUpdate{chanID, types.Payout{sdk.Coins{sdk.NewInt64Coin("usd", 3)}, sdk.Coins{sdk.NewInt64Coin("usd", 7)}}, senderAccountIndex, senderAccountIndex},
 				"empty",
 				true,
 			},
 			{
 				"NoCoins",
 				true,
-				testUpdate{chanID, Payout{sdk.Coins{}}, senderAccountIndex, senderAccountIndex},
+				testUpdate{chanID, types.Payout{sdk.Coins{}}, senderAccountIndex, senderAccountIndex},
 				"empty",
 				true,
 			},
 			{
 				"TooManyCoins",
 				true,
-				testUpdate{chanID, Payout{sdk.Coins{sdk.NewInt64Coin("usd", 100)}, sdk.Coins{sdk.NewInt64Coin("usd", 7)}}, senderAccountIndex, senderAccountIndex},
+				testUpdate{chanID, types.Payout{sdk.Coins{sdk.NewInt64Coin("usd", 100)}, sdk.Coins{sdk.NewInt64Coin("usd", 7)}}, senderAccountIndex, senderAccountIndex},
 				"empty",
 				true,
 			},
 			{
 				"WrongSignature",
 				true,
-				testUpdate{chanID, Payout{sdk.Coins{sdk.NewInt64Coin("usd", 3)}, sdk.Coins{sdk.NewInt64Coin("usd", 7)}}, senderAccountIndex, otherAccountIndex},
+				testUpdate{chanID, types.Payout{sdk.Coins{sdk.NewInt64Coin("usd", 3)}, sdk.Coins{sdk.NewInt64Coin("usd", 7)}}, senderAccountIndex, otherAccountIndex},
 				"empty",
 				true,
 			},
 			{
 				"WrongPubKey",
 				true,
-				testUpdate{chanID, Payout{sdk.Coins{sdk.NewInt64Coin("usd", 3)}, sdk.Coins{sdk.NewInt64Coin("usd", 7)}}, otherAccountIndex, senderAccountIndex},
+				testUpdate{chanID, types.Payout{sdk.Coins{sdk.NewInt64Coin("usd", 3)}, sdk.Coins{sdk.NewInt64Coin("usd", 7)}}, otherAccountIndex, senderAccountIndex},
 				"empty",
 				true,
 			},
 			{
 				"ReceiverSigned",
 				true,
-				testUpdate{chanID, Payout{sdk.Coins{sdk.NewInt64Coin("usd", 3)}, sdk.Coins{sdk.NewInt64Coin("usd", 7)}}, receiverAccountIndex, receiverAccountIndex},
+				testUpdate{chanID, types.Payout{sdk.Coins{sdk.NewInt64Coin("usd", 3)}, sdk.Coins{sdk.NewInt64Coin("usd", 7)}}, receiverAccountIndex, receiverAccountIndex},
 				"empty",
 				true,
 			},
@@ -246,10 +248,10 @@ func TestKeeper(t *testing.T) {
 				// SETUP
 				ctx, _, channelKeeper, addrs, pubKeys, privKeys, _ := createMockApp(accountSeeds)
 				// Set empty submittedUpdatesQueue TODO work out proper genesis initialisation
-				channelKeeper.setSubmittedUpdatesQueue(ctx, SubmittedUpdatesQueue{})
+				channelKeeper.setSubmittedUpdatesQueue(ctx, types.SubmittedUpdatesQueue{})
 				// create new channel
 				if testCase.setupChannel {
-					channel := Channel{
+					channel := types.Channel{
 						ID:           chanID, // should be 0 as first channel
 						Participants: [2]sdk.AccAddress{addrs[senderAccountIndex], addrs[receiverAccountIndex]},
 						Coins:        sdk.Coins{sdk.NewInt64Coin("usd", 10)},
@@ -259,14 +261,14 @@ func TestKeeper(t *testing.T) {
 
 				// create update
 				// basic values
-				updateToSubmit := Update{
+				updateToSubmit := types.Update{
 					ChannelID: testCase.updateToSubmit.channelID,
 					Payout:    testCase.updateToSubmit.payout,
 					// empty sig
 				}
 				// create update's signature
 				cryptoSig, _ := privKeys[testCase.updateToSubmit.sigAccountIndex].Sign(updateToSubmit.GetSignBytes())
-				updateToSubmit.Sigs = [1]UpdateSignature{UpdateSignature{
+				updateToSubmit.Sigs = [1]types.UpdateSignature{types.UpdateSignature{
 					PubKey:          pubKeys[testCase.updateToSubmit.pubKeyAccountIndex],
 					CryptoSignature: cryptoSig,
 				}}
@@ -289,7 +291,7 @@ func TestKeeper(t *testing.T) {
 					assert.Zero(t, su)
 				case "sameAsSubmitted":
 					assert.True(t, found)
-					expectedSU := SubmittedUpdate{updateToSubmit, ChannelDisputeTime}
+					expectedSU := types.SubmittedUpdate{updateToSubmit, types.ChannelDisputeTime}
 					assert.Equal(t, expectedSU, su)
 				}
 
