@@ -1,4 +1,4 @@
-package paychan
+package types
 
 import (
 	"testing"

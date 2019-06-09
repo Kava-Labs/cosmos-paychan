@@ -2,6 +2,8 @@ package paychan
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/kava-labs/cosmos-sdk-paychan/paychan/types"
 )
 
 // EndBlocker closes channels that have past their execution time.
@@ -14,7 +16,7 @@ func EndBlocker(ctx sdk.Context, k Keeper) sdk.Tags {
 	// Iterate through submittedUpdatesQueue
 	// TODO optimise so it doesn't pull every channel update from DB every block
 	q := k.getSubmittedUpdatesQueue(ctx)
-	var sUpdate SubmittedUpdate
+	var sUpdate types.SubmittedUpdate
 	var found bool
 
 	for _, id := range q {

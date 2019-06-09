@@ -3,21 +3,24 @@ package paychan
 import (
 	"encoding/json"
 
+	"github.com/cosmos/cosmos-sdk/client/context"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/gorilla/mux"
 	"github.com/spf13/cobra"
-	"github.com/cosmos/cosmos-sdk/client/context"
+	abci "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/kava-labs/cosmos-sdk-paychan/paychan/client/cli"
 	"github.com/kava-labs/cosmos-sdk-paychan/paychan/client/rest"
+	"github.com/kava-labs/cosmos-sdk-paychan/paychan/types"
 )
 
-const ModuleName = "paychan"
-const routerKey = ModuleName
-const StoreKey = ModuleName
+const (
+	ModuleName = types.ModuleName
+	RouterKey  = types.RouterKey
+	StoreKey   = types.StoreKey
+)
 
 // ---------- AppModuleBasic ----------
 
@@ -31,7 +34,7 @@ var _ module.AppModuleBasic = AppModuleBasic{}
 func (AppModuleBasic) Name() string { return ModuleName }
 
 // register module codec
-func (AppModuleBasic) RegisterCodec(cdc *codec.Codec) { RegisterCodec(cdc) }
+func (AppModuleBasic) RegisterCodec(cdc *codec.Codec) { types.RegisterCodec(cdc) }
 
 // default genesis state
 func (AppModuleBasic) DefaultGenesis() json.RawMessage { return nil }
@@ -39,20 +42,19 @@ func (AppModuleBasic) DefaultGenesis() json.RawMessage { return nil }
 // module validate genesis
 func (AppModuleBasic) ValidateGenesis(bz json.RawMessage) error { return nil }
 
-
 // register rest routes
 func (AppModuleBasic) RegisterRESTRoutes(ctx context.CLIContext, rtr *mux.Router) {
-	rest.RegisterRoutes(ctx, rtr ) // maybe store key
+	rest.RegisterRoutes(ctx, rtr) // maybe store key
 }
 
 // get the root tx command of this module
 func (AppModuleBasic) GetTxCmd(cdc *codec.Codec) *cobra.Command {
-	return cli.GetTxCmd(StoreKey, cdc)
+	return cli.GetTxCmd(StoreKey, cdc) // TODO why is storekey passed in when it is defined in types
 }
 
 // get the root query command of this module
 func (AppModuleBasic) GetQueryCmd(cdc *codec.Codec) *cobra.Command {
-	return cli.GetQueryCmd(cdc) // TODO storekey?
+	return cli.GetQueryCmd(StoreKey, cdc) // TODO why is storekey passed in when it is defined in types
 }
 
 // ---------- AppModule ----------
@@ -82,7 +84,7 @@ func (AppModule) RegisterInvariants(_ sdk.InvariantRouter) {}
 
 // module message route name
 func (AppModule) Route() string {
-	return routerKey
+	return RouterKey
 }
 
 // module handler

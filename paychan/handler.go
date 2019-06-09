@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/kava-labs/cosmos-sdk-paychan/paychan/types"
 )
 
 // NewHandler returns a handler for "paychan" type messages.
@@ -11,9 +13,9 @@ import (
 func NewHandler(k Keeper) sdk.Handler {
 	return func(ctx sdk.Context, msg sdk.Msg) sdk.Result {
 		switch msg := msg.(type) {
-		case MsgCreate:
+		case types.MsgCreate:
 			return handleMsgCreate(ctx, k, msg)
-		case MsgSubmitUpdate:
+		case types.MsgSubmitUpdate:
 			return handleMsgSubmitUpdate(ctx, k, msg)
 		default:
 			errMsg := fmt.Sprintf("unrecognized distribution message type: %T", msg)
@@ -24,7 +26,7 @@ func NewHandler(k Keeper) sdk.Handler {
 
 // Handle MsgCreate
 // Leaves validation to the keeper methods.
-func handleMsgCreate(ctx sdk.Context, k Keeper, msg MsgCreate) sdk.Result {
+func handleMsgCreate(ctx sdk.Context, k Keeper, msg types.MsgCreate) sdk.Result {
 	tags, err := k.CreateChannel(ctx, msg.Participants[0], msg.Participants[len(msg.Participants)-1], msg.Coins)
 	if err != nil {
 		return err.Result()
@@ -37,7 +39,7 @@ func handleMsgCreate(ctx sdk.Context, k Keeper, msg MsgCreate) sdk.Result {
 
 // Handle MsgSubmitUpdate
 // Leaves validation to the keeper methods.
-func handleMsgSubmitUpdate(ctx sdk.Context, k Keeper, msg MsgSubmitUpdate) sdk.Result {
+func handleMsgSubmitUpdate(ctx sdk.Context, k Keeper, msg types.MsgSubmitUpdate) sdk.Result {
 	var err sdk.Error
 	tags := sdk.EmptyTags()
 

@@ -7,6 +7,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/bank"
+
+	"github.com/kava-labs/cosmos-sdk-paychan/paychan/types"
 )
 
 // Keeper of the paychan store
@@ -58,7 +60,7 @@ func (k Keeper) CreateChannel(ctx sdk.Context, sender sdk.AccAddress, receiver s
 	// Calculate next id
 	id := k.getNewChannelID(ctx)
 	// create new Paychan struct
-	channel := Channel{
+	channel := types.Channel{
 		ID:           id,
 		Participants: [2]sdk.AccAddress{sender, receiver},
 		Coins:        coins,
@@ -72,7 +74,7 @@ func (k Keeper) CreateChannel(ctx sdk.Context, sender sdk.AccAddress, receiver s
 }
 
 // InitCloseChannelBySender initiates the close of a payment channel, subject to a dispute period.
-func (k Keeper) InitCloseChannelBySender(ctx sdk.Context, update Update) (sdk.Tags, sdk.Error) {
+func (k Keeper) InitCloseChannelBySender(ctx sdk.Context, update types.Update) (sdk.Tags, sdk.Error) {
 	// This is roughly the default path for non unidirectional channels
 
 	// get the channel
@@ -103,9 +105,9 @@ func (k Keeper) InitCloseChannelBySender(ctx sdk.Context, update Update) (sdk.Ta
 		sdk.ErrInternal("Sender can't submit an update for channel if one has already been submitted.")
 	} else {
 		// No one has tried to update channel
-		submittedUpdate := SubmittedUpdate{
+		submittedUpdate := types.SubmittedUpdate{
 			Update:        update,
-			ExecutionTime: ctx.BlockHeight() + ChannelDisputeTime,
+			ExecutionTime: ctx.BlockHeight() + types.ChannelDisputeTime,
 		}
 		k.addToSubmittedUpdatesQueue(ctx, submittedUpdate)
 	}
@@ -116,7 +118,7 @@ func (k Keeper) InitCloseChannelBySender(ctx sdk.Context, update Update) (sdk.Ta
 }
 
 // CloseChannelByReceiver immediately closes a payment channel.
-func (k Keeper) CloseChannelByReceiver(ctx sdk.Context, update Update) (sdk.Tags, sdk.Error) {
+func (k Keeper) CloseChannelByReceiver(ctx sdk.Context, update types.Update) (sdk.Tags, sdk.Error) {
 
 	// get the channel
 	channel, found := k.getChannel(ctx, update.ChannelID)
@@ -159,7 +161,7 @@ func (k Keeper) CloseChannelByReceiver(ctx sdk.Context, update Update) (sdk.Tags
 // }
 
 // VerifyUpdate checks that a given update is valid for a given channel.
-func VerifyUpdate(channel Channel, update Update) sdk.Error {
+func VerifyUpdate(channel types.Channel, update types.Update) sdk.Error {
 
 	// Check the num of payout participants match channel participants
 	if len(update.Payout) != len(channel.Participants) {
@@ -188,7 +190,7 @@ func VerifyUpdate(channel Channel, update Update) sdk.Error {
 
 // closeChannel closes a payment channel without any checks.
 // It doesn't check if the given update matches an existing channel.
-func (k Keeper) closeChannel(ctx sdk.Context, update Update) (sdk.Tags, sdk.Error) {
+func (k Keeper) closeChannel(ctx sdk.Context, update types.Update) (sdk.Tags, sdk.Error) {
 	var err sdk.Error
 
 	channel, _ := k.getChannel(ctx, update.ChannelID)
@@ -210,7 +212,7 @@ func (k Keeper) closeChannel(ctx sdk.Context, update Update) (sdk.Tags, sdk.Erro
 }
 
 // verifySignatures checks whether the signatures on a given update are correct.
-func verifySignatures(channel Channel, update Update) bool {
+func verifySignatures(channel types.Channel, update types.Update) bool {
 	// In non unidirectional channels there will be more than one signature to check
 
 	signBytes := update.GetSignBytes()
@@ -231,7 +233,7 @@ func verifySignatures(channel Channel, update Update) bool {
 // SUBMITTED UPDATES QUEUE
 // ============================================================
 
-func (k Keeper) addToSubmittedUpdatesQueue(ctx sdk.Context, sUpdate SubmittedUpdate) {
+func (k Keeper) addToSubmittedUpdatesQueue(ctx sdk.Context, sUpdate types.SubmittedUpdate) {
 	// always overwrite prexisting values - leave paychan logic to higher levels
 	// get current queue
 	q := k.getSubmittedUpdatesQueue(ctx)
@@ -244,7 +246,7 @@ func (k Keeper) addToSubmittedUpdatesQueue(ctx sdk.Context, sUpdate SubmittedUpd
 	// store submittedUpdate
 	k.setSubmittedUpdate(ctx, sUpdate)
 }
-func (k Keeper) removeFromSubmittedUpdatesQueue(ctx sdk.Context, channelID ChannelID) {
+func (k Keeper) removeFromSubmittedUpdatesQueue(ctx sdk.Context, channelID types.ChannelID) {
 	// get current queue
 	q := k.getSubmittedUpdatesQueue(ctx)
 	// remove id
@@ -255,12 +257,12 @@ func (k Keeper) removeFromSubmittedUpdatesQueue(ctx sdk.Context, channelID Chann
 	k.deleteSubmittedUpdate(ctx, channelID)
 }
 
-func (k Keeper) getSubmittedUpdatesQueue(ctx sdk.Context) SubmittedUpdatesQueue {
+func (k Keeper) getSubmittedUpdatesQueue(ctx sdk.Context) types.SubmittedUpdatesQueue {
 	// load from DB
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(k.getSubmittedUpdatesQueueKey())
 
-	var suq SubmittedUpdatesQueue // if the submittedUpdatesQueue not found then return an empty one
+	var suq types.SubmittedUpdatesQueue // if the submittedUpdatesQueue not found then return an empty one
 	if bz != nil {
 		// unmarshal
 		k.cdc.MustUnmarshalBinaryLengthPrefixed(bz, &suq)
@@ -268,7 +270,7 @@ func (k Keeper) getSubmittedUpdatesQueue(ctx sdk.Context) SubmittedUpdatesQueue 
 	return suq
 
 }
-func (k Keeper) setSubmittedUpdatesQueue(ctx sdk.Context, suq SubmittedUpdatesQueue) {
+func (k Keeper) setSubmittedUpdatesQueue(ctx sdk.Context, suq types.SubmittedUpdatesQueue) {
 	store := ctx.KVStore(k.storeKey)
 	// marshal
 	bz := k.cdc.MustMarshalBinaryLengthPrefixed(suq)
@@ -286,13 +288,13 @@ func (k Keeper) getSubmittedUpdatesQueueKey() []byte {
 // This section deals with only setting and getting
 // ============================================================
 
-func (k Keeper) getSubmittedUpdate(ctx sdk.Context, channelID ChannelID) (SubmittedUpdate, bool) {
+func (k Keeper) getSubmittedUpdate(ctx sdk.Context, channelID types.ChannelID) (types.SubmittedUpdate, bool) {
 
 	// load from DB
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(GetSubmittedUpdateKey(channelID))
 
-	var sUpdate SubmittedUpdate
+	var sUpdate types.SubmittedUpdate
 	if bz == nil {
 		return sUpdate, false
 	}
@@ -303,7 +305,7 @@ func (k Keeper) getSubmittedUpdate(ctx sdk.Context, channelID ChannelID) (Submit
 }
 
 // Store payment channel struct in blockchain store.
-func (k Keeper) setSubmittedUpdate(ctx sdk.Context, sUpdate SubmittedUpdate) {
+func (k Keeper) setSubmittedUpdate(ctx sdk.Context, sUpdate types.SubmittedUpdate) {
 	store := ctx.KVStore(k.storeKey)
 	// marshal
 	bz := k.cdc.MustMarshalBinaryLengthPrefixed(sUpdate) // panics if something goes wrong
@@ -312,14 +314,14 @@ func (k Keeper) setSubmittedUpdate(ctx sdk.Context, sUpdate SubmittedUpdate) {
 	store.Set(key, bz) // panics if something goes wrong
 }
 
-func (k Keeper) deleteSubmittedUpdate(ctx sdk.Context, channelID ChannelID) {
+func (k Keeper) deleteSubmittedUpdate(ctx sdk.Context, channelID types.ChannelID) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(GetSubmittedUpdateKey(channelID))
 	// TODO does this have return values? What happens when key doesn't exist?
 }
 
 // GetSubmittedUpdateKey returns the store key for the SubmittedUpdate corresponding to the channel with the given ID.
-func GetSubmittedUpdateKey(channelID ChannelID) []byte {
+func GetSubmittedUpdateKey(channelID types.ChannelID) []byte {
 	return []byte(fmt.Sprintf("submittedUpdate:%d", channelID))
 }
 
@@ -328,12 +330,12 @@ func GetSubmittedUpdateKey(channelID ChannelID) []byte {
 // ============================================================
 
 // getChannel retrieves a payment channel struct from the blockchain store.
-func (k Keeper) getChannel(ctx sdk.Context, channelID ChannelID) (Channel, bool) {
+func (k Keeper) getChannel(ctx sdk.Context, channelID types.ChannelID) (types.Channel, bool) {
 	// load from DB
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(GetChannelKey(channelID))
+	bz := store.Get(types.GetChannelKey(channelID))
 
-	var channel Channel
+	var channel types.Channel
 	if bz == nil {
 		return channel, false
 	}
@@ -344,26 +346,26 @@ func (k Keeper) getChannel(ctx sdk.Context, channelID ChannelID) (Channel, bool)
 }
 
 // setChannel stores a payment channel struct in the blockchain store.
-func (k Keeper) setChannel(ctx sdk.Context, channel Channel) {
+func (k Keeper) setChannel(ctx sdk.Context, channel types.Channel) {
 	store := ctx.KVStore(k.storeKey)
 	// marshal
 	bz := k.cdc.MustMarshalBinaryLengthPrefixed(channel) // panics if something goes wrong
 	// write to db
-	key := GetChannelKey(channel.ID)
+	key := types.GetChannelKey(channel.ID)
 	store.Set(key, bz) // panics if something goes wrong
 }
 
 // deleteChannel removes a channel struct from the blockchain store.
-func (k Keeper) deleteChannel(ctx sdk.Context, channelID ChannelID) {
+func (k Keeper) deleteChannel(ctx sdk.Context, channelID types.ChannelID) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(GetChannelKey(channelID))
+	store.Delete(types.GetChannelKey(channelID))
 	// TODO does this have return values? What happens when key doesn't exist?
 }
 
 // getNewChannelID deterministically creates a new id, updating a global counter counter.
-func (k Keeper) getNewChannelID(ctx sdk.Context) ChannelID {
+func (k Keeper) getNewChannelID(ctx sdk.Context) types.ChannelID {
 	// get last channel ID
-	var lastID ChannelID
+	var lastID types.ChannelID
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(getLastChannelIDKey())
 	if bz == nil {
@@ -378,11 +380,6 @@ func (k Keeper) getNewChannelID(ctx sdk.Context) ChannelID {
 	store.Set(getLastChannelIDKey(), bz)
 	// return
 	return newID
-}
-
-// GetChannelKey returns the store key for the channel with the given ID.
-func GetChannelKey(channelID ChannelID) []byte {
-	return []byte(fmt.Sprintf("channel:%d", channelID))
 }
 
 // getLastChannelIDKey returns the store key used for the global id counter.
