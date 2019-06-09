@@ -9,24 +9,8 @@ This module implements simple but feature complete unidirectional payment channe
 TODO Explain how the payment channels are implemented.
 
 # TODO
+ - see if the signature types used by auth can be reused here
  - Documentation - method descriptions, remove unnecessary comments, docs
- - design and implement layer 2 protocol - add in to lcd
-	- sender cli
-	   - create
-	   - senderClose
-	   - getPaychan(s)
-
-	   - pay
-	   - requestClose
-	   - getBalance
-	- receiver cli
-	   - close
-	   - getBalance
-	- rest api
-	   - /pay (s)
-	   - /requestClose (s)
-	   - /getBalance (s,r)
-	   - /close (r)
  - make closeChannel safer?
  - Consider using bft time for channel timeouts.
  - Refactor submit update route - handle signer detection better

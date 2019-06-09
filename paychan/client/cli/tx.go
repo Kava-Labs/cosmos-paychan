@@ -1,13 +1,19 @@
 package cli
 
 import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/context"
+	"github.com/cosmos/cosmos-sdk/client/keys"
 	"github.com/cosmos/cosmos-sdk/client/utils"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"github.com/kava-labs/cosmos-sdk-paychan/paychan/types"
 )
@@ -24,12 +30,9 @@ func GetTxCmd(storeKey string, cdc *codec.Codec) *cobra.Command {
 
 	txCmd.AddCommand(client.PostCommands(
 		GetCmd_CreateChannel(cdc),
-		GetCmd_SubmitPayment(cdc), // TODO do any of these need storekeys?
+		GetCmd_SubmitPayment(cdc),
+		GetCmd_GeneratePayment(cdc),
 	)...)
-
-	// TODO where do these go?
-	// GeneratePaymentCmd
-	// VerifyPaymentCmd
 
 	return txCmd
 }
@@ -60,202 +63,133 @@ func GetCmd_CreateChannel(cdc *codec.Codec) *cobra.Command {
 
 			// Create msg
 			senderAddr := cliCtx.GetFromAddress()
-
 			msg := types.MsgCreate{
 				Participants: [2]sdk.AccAddress{senderAddr, receiverAddr},
 				Coins:        amount,
 			}
-			err = msg.ValidateBasic()
-			if err != nil {
+			if err = msg.ValidateBasic(); err != nil {
 				return err
 			}
 
+			// Generate tx and maybe sign and broadcast to blockchain
 			return utils.GenerateOrBroadcastMsgs(cliCtx, txBldr, []sdk.Msg{msg})
 		},
 	}
-}
-
-func GeneratePaymentCmd(cdc *codec.Codec) *cobra.Command {
-	flagId := "chan-id"
-	flagReceiverAmount := "rec-amt" // amount the receiver should received on closing the channel
-	flagSenderAmount := "sen-amt"
-	flagPaymentFile := "filename"
-
-	cmd := &cobra.Command{
-		Use:   "pay",
-		Short: "Generate a new payment.", // TODO descriptions
-		Long:  "Generate a payment file (json) to send to the receiver as a payment.",
-		Args:  cobra.NoArgs,
-		// RunE: func(cmd *cobra.Command, args []string) error {
-
-		// 	// Create a cli "context": struct populated with info from common flags.
-		// 	cliCtx := context.NewCLIContext().
-		// 		WithCodec(cdc).
-		// 		WithLogger(os.Stdout).
-		// 		WithAccountDecoder(authcmd.GetAccountDecoder(cdc))
-
-		// 	// Get the paychan id
-		// 	id := paychan.ChannelID(viper.GetInt64(flagId)) // TODO make this default to pulling id from chain
-
-		// 	// Get channel receiver amount
-		// 	senderCoins, err := sdk.ParseCoins(viper.GetString(flagSenderAmount))
-		// 	if err != nil {
-		// 		return err
-		// 	}
-		// 	// Get channel receiver amount
-		// 	receiverCoins, err := sdk.ParseCoins(viper.GetString(flagReceiverAmount))
-		// 	if err != nil {
-		// 		return err
-		// 	}
-
-		// 	// create close paychan msg
-		// 	update := paychan.Update{
-		// 		ChannelID: id,
-		// 		Payout:    paychan.Payout{senderCoins, receiverCoins},
-		// 		// empty sigs
-		// 	}
-
-		// 	// Sign the update as the sender
-		// 	keybase, err := keys.GetKeyBase()
-		// 	if err != nil {
-		// 		return err
-		// 	}
-		// 	name := cliCtx.FromAddressName
-		// 	passphrase, err := keys.GetPassphrase(cliCtx.FromAddressName)
-		// 	if err != nil {
-		// 		return err
-		// 	}
-		// 	bz := update.GetSignBytes()
-
-		// 	sig, pubKey, err := keybase.Sign(name, passphrase, bz)
-		// 	if err != nil {
-		// 		return err
-		// 	}
-		// 	update.Sigs = [1]paychan.UpdateSignature{{
-		// 		PubKey:          pubKey,
-		// 		CryptoSignature: sig,
-		// 	}}
-
-		// 	// Write out the update
-		// 	jsonUpdate, err := codec.MarshalJSONIndent(cdc, update)
-		// 	if err != nil {
-		// 		return err
-		// 	}
-		// 	paymentFile := viper.GetString(flagPaymentFile)
-		// 	err = ioutil.WriteFile(paymentFile, jsonUpdate, 0644)
-		// 	if err != nil {
-		// 		return err
-		// 	}
-		// 	fmt.Printf("Written payment out to %v.\n", paymentFile)
-
-		// 	return nil
-		// },
-	}
-	cmd.Flags().Int(flagId, 0, "ID of the payment channel.")
-	cmd.Flags().String(flagSenderAmount, "", "Total coins to payout to sender on channel close.")
-	cmd.Flags().String(flagReceiverAmount, "", "Total coins to payout to sender on channel close.")
-	cmd.Flags().String(flagPaymentFile, "payment.json", "File name to write the payment into.")
-	return cmd
-}
-
-func VerifyPaymentCmd(cdc *codec.Codec, paychanStoreName string) *cobra.Command {
-	flagPaymentFile := "payment"
-
-	cmd := &cobra.Command{
-		Use:   "verify",
-		Short: "Verify a payment file.",
-		Long:  "Verify that a received payment can be used to close a channel.",
-		Args:  cobra.NoArgs,
-		// RunE: func(cmd *cobra.Command, args []string) error {
-
-		// 	// Create a cli "context": struct populated with info from common flags.
-		// 	cliCtx := context.NewCLIContext().
-		// 		WithCodec(cdc).
-		// 		WithLogger(os.Stdout).
-		// 		WithAccountDecoder(authcmd.GetAccountDecoder(cdc))
-
-		// 	// read in update
-		// 	bz, err := ioutil.ReadFile(viper.GetString(flagPaymentFile))
-		// 	if err != nil {
-		// 		// TODO add nice message about how to feed in stdin
-		// 		return err
-		// 	}
-		// 	// decode json
-		// 	var update paychan.Update
-		// 	cdc.UnmarshalJSON(bz, &update)
-
-		// 	// get the channel from the node
-		// 	res, err := cliCtx.QueryStore(paychan.GetChannelKey(update.ChannelID), paychanStoreName)
-		// 	if len(res) == 0 || err != nil {
-		// 		return errors.Errorf("channel with ID '%d' does not exist", update.ChannelID)
-		// 	}
-		// 	var channel paychan.Channel
-		// 	cdc.MustUnmarshalBinary(res, &channel)
-
-		// 	//verify
-		// 	verificationError := paychan.VerifyUpdate(channel, update)
-
-		// 	// print result
-		// 	if verificationError == nil {
-		// 		fmt.Printf("Payment is valid for channel '%d'.\n", update.ChannelID)
-		// 	} else {
-		// 		fmt.Printf("Payment is NOT valid for channel '%d'.\n", update.ChannelID)
-		// 		fmt.Println(verificationError)
-		// 	}
-		// 	return nil
-		// },
-	}
-	cmd.Flags().String(flagPaymentFile, "payment.json", "File name to read the payment from.")
-
-	return cmd
 }
 
 func GetCmd_SubmitPayment(cdc *codec.Codec) *cobra.Command {
 	flagPaymentFile := "payment"
 
 	cmd := &cobra.Command{
-		Use:   "submit",
+		Use:   "close",
 		Short: "Submit a payment to the blockchain to close the channel.",
-		//Long:  fmt.Sprintf("Submit a payment to the blockchain to either close a channel immediately (if you are the receiver) or after a dispute period of %d blocks (if you are the sender).", paychan.ChannelDisputeTime),
-		Args: cobra.NoArgs,
-		// RunE: func(cmd *cobra.Command, args []string) error {
+		Long:  fmt.Sprintf("Submit a payment to the blockchain to either close a channel immediately (if you are the receiver) or after a dispute period of %d blocks (if you are the sender).", types.ChannelDisputeTime),
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Create cli helpers
+			txBldr := auth.NewTxBuilderFromCLI().WithTxEncoder(utils.GetTxEncoder(cdc))
+			cliCtx := context.NewCLIContext().
+				WithCodec(cdc).
+				WithAccountDecoder(cdc)
 
-		// 	// Create a tx and cli "contexts": structs populated with info from common flags.
-		// 	txCtx := authctx.NewTxContextFromCLI().WithCodec(cdc)
-		// 	cliCtx := context.NewCLIContext().
-		// 		WithCodec(cdc).
-		// 		WithLogger(os.Stdout).
-		// 		WithAccountDecoder(authcmd.GetAccountDecoder(cdc))
+			// Get the payment to be submitted to the blockchain
+			bz, err := ioutil.ReadFile(viper.GetString(flagPaymentFile))
+			if err != nil {
+				return err
+			}
+			var update types.Update
+			err = json.Unmarshal(bz, &update)
+			if err != nil {
+				return err
+			}
 
-		// 	// Get sender address
-		// 	submitter, err := cliCtx.GetFromAddress()
-		// 	if err != nil {
-		// 		return err
-		// 	}
+			// Create msg
+			msg := types.MsgSubmitUpdate{
+				Update:    update,
+				Submitter: cliCtx.GetFromAddress(),
+			}
+			if err = msg.ValidateBasic(); err != nil {
+				return err
+			}
 
-		// 	// read in update
-		// 	bz, err := ioutil.ReadFile(viper.GetString(flagPaymentFile))
-		// 	if err != nil {
-		// 		return err
-		// 	}
-		// 	// decode json
-		// 	var update paychan.Update
-		// 	cdc.UnmarshalJSON(bz, &update)
-
-		// 	// Create the create channel msg to send
-		// 	msg := paychan.MsgSubmitUpdate{
-		// 		Update:    update,
-		// 		Submitter: submitter,
-		// 	}
-		// 	err = msg.ValidateBasic()
-		// 	if err != nil {
-		// 		return err
-		// 	}
-
-		// 	// Build and sign the transaction, then broadcast to the blockchain
-		// 	return utils.SendTx(txCtx, cliCtx, []sdk.Msg{msg})
-		// },
+			// Generate tx and maybe sign and broadcast to blockchain
+			return utils.GenerateOrBroadcastMsgs(cliCtx, txBldr, []sdk.Msg{msg})
+		},
 	}
 	cmd.Flags().String(flagPaymentFile, "payment.json", "File to read the payment from.")
+	return cmd
+}
+
+func GetCmd_GeneratePayment(cdc *codec.Codec) *cobra.Command {
+	flagPaymentFile := "filename"
+
+	cmd := &cobra.Command{
+		Use:   "pay [channel-id] [sender-amount] [receiver-amount]",
+		Short: "generate a new payment",
+		Long: `Generate a payment file (json) to send to the receiver as a payment.
+Specify the channel id, and the total coins to be received by the channel's sender and receiver when the channel is eventually closed.`,
+		Args: cobra.ExactArgs(3),
+		RunE: func(cmd *cobra.Command, args []string) error {
+
+			// Create cli helpers
+			txBldr := auth.NewTxBuilderFromCLI().WithTxEncoder(utils.GetTxEncoder(cdc))
+			cliCtx := context.NewCLIContext().
+				WithCodec(cdc).
+				WithAccountDecoder(cdc)
+
+			// Parse inputs
+			channelID, err := types.NewChannelIDFromString(args[0])
+			if err != nil {
+				return err
+			}
+			senderAmount, err := sdk.ParseCoins(args[1])
+			if err != nil {
+				return err
+			}
+			receiverAmount, err := sdk.ParseCoins(args[2])
+			if err != nil {
+				return err
+			}
+
+			// Create an update
+			update := types.Update{
+				ChannelID: channelID,
+				Payout:    types.Payout{senderAmount, receiverAmount},
+				// empty signature
+			}
+
+			// Sign the update
+			name := cliCtx.GetFromName()
+			passphrase, err := keys.GetPassphrase(name)
+			if err != nil {
+				return err
+			}
+			bz := update.GetSignBytes()
+			sig, pubKey, err := txBldr.Keybase().Sign(name, passphrase, bz)
+			if err != nil {
+				return err
+			}
+			update.Sigs = [1]types.UpdateSignature{{
+				PubKey:          pubKey,
+				CryptoSignature: sig,
+			}}
+
+			// Write out the update
+			// TODO can this use the cli helpers? Can it be printed to stdOut instead?
+			jsonUpdate, err := codec.MarshalJSONIndent(cdc, update)
+			if err != nil {
+				return err
+			}
+			paymentFile := viper.GetString(flagPaymentFile)
+			err = ioutil.WriteFile(paymentFile, jsonUpdate, 0644)
+			if err != nil {
+				return err
+			}
+			fmt.Printf("Written payment out to %v.\n", paymentFile)
+
+			return nil
+		},
+	}
+	cmd.Flags().String(flagPaymentFile, "payment.json", "File name to write the payment into.")
 	return cmd
 }
