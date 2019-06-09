@@ -2,7 +2,6 @@ package paychan
 
 import (
 	"bytes"
-	"fmt"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -292,7 +291,7 @@ func (k Keeper) getSubmittedUpdate(ctx sdk.Context, channelID types.ChannelID) (
 
 	// load from DB
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(GetSubmittedUpdateKey(channelID))
+	bz := store.Get(types.GetSubmittedUpdateKey(channelID))
 
 	var sUpdate types.SubmittedUpdate
 	if bz == nil {
@@ -310,19 +309,14 @@ func (k Keeper) setSubmittedUpdate(ctx sdk.Context, sUpdate types.SubmittedUpdat
 	// marshal
 	bz := k.cdc.MustMarshalBinaryLengthPrefixed(sUpdate) // panics if something goes wrong
 	// write to db
-	key := GetSubmittedUpdateKey(sUpdate.ChannelID)
+	key := types.GetSubmittedUpdateKey(sUpdate.ChannelID)
 	store.Set(key, bz) // panics if something goes wrong
 }
 
 func (k Keeper) deleteSubmittedUpdate(ctx sdk.Context, channelID types.ChannelID) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(GetSubmittedUpdateKey(channelID))
+	store.Delete(types.GetSubmittedUpdateKey(channelID))
 	// TODO does this have return values? What happens when key doesn't exist?
-}
-
-// GetSubmittedUpdateKey returns the store key for the SubmittedUpdate corresponding to the channel with the given ID.
-func GetSubmittedUpdateKey(channelID types.ChannelID) []byte {
-	return []byte(fmt.Sprintf("submittedUpdate:%d", channelID))
 }
 
 // ============================================================

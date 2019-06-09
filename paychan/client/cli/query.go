@@ -12,29 +12,26 @@ import (
 	"github.com/kava-labs/cosmos-sdk-paychan/paychan/types"
 )
 
-// query channel [id]
-// query channels -sender addr -receiver addr
-// query update [id]
-
 // GetQueryCmd returns the cli query commands for this module
 func GetQueryCmd(storeKey string, cdc *codec.Codec) *cobra.Command {
 	queryCmd := &cobra.Command{
-		Use:                        "paychan", // or types.ModuleName
+		Use:                        types.ModuleName,
 		Short:                      "Querying commands for the paychan module",
 		DisableFlagParsing:         true,
 		SuggestionsMinimumDistance: 2,
 		RunE:                       utils.ValidateCmd,
 	}
 
-	queryCmd.AddCommand(client.GetCommands( // TODO should this be a separate subcommand?
+	queryCmd.AddCommand(client.GetCommands(
 		GetCmd_GetChannel(storeKey, cdc),
+		GetCmd_GetSubmittedUpdate(storeKey, cdc),
 	)...)
 
 	return queryCmd
 }
 
 func GetCmd_GetChannel(storeKey string, cdc *codec.Codec) *cobra.Command {
-	cmd := &cobra.Command{
+	return &cobra.Command{
 		Use:   "paychan [paychan-id]",
 		Args:  cobra.ExactArgs(1),
 		Short: "Get details of a channel",
@@ -64,64 +61,37 @@ func GetCmd_GetChannel(storeKey string, cdc *codec.Codec) *cobra.Command {
 			return cliCtx.PrintOutput(channel)
 		},
 	}
-	return cmd
+}
 
-	/*
-		flagId := "chan-id"
-		cmd := &cobra.Command{
-			Use:   "get",
-			Short: "Get info on a channel.",
-			Long:  "Get the details of a non closed channel plus any submitted update waiting to be executed.",
-			Args:  cobra.NoArgs,
-			RunE: func(cmd *cobra.Command, args []string) error {
+func GetCmd_GetSubmittedUpdate(storeKey string, cdc *codec.Codec) *cobra.Command {
+	return &cobra.Command{
+		Use:   "update [paychan-id]",
+		Args:  cobra.ExactArgs(1),
+		Short: "get the latest update submitted to a channel",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cliCtx := context.NewCLIContext().WithCodec(cdc)
 
-				// Create a cli "context": struct populated with info from common flags.
-				cliCtx := context.NewCLIContext().
-					WithCodec(cdc).
-					WithLogger(os.Stdout).
-					WithAccountDecoder(authcmd.GetAccountDecoder(cdc))
+			// Parse and validate input
+			channelID, err := types.NewChannelIDFromString(args[0])
+			if err != nil {
+				return err
+			}
 
-				// Get channel ID
-				id := paychan.ChannelID(viper.GetInt64(flagId))
+			// Query the node
+			res, err := cliCtx.QueryStore(types.GetSubmittedUpdateKey(channelID), storeKey)
+			if err != nil {
+				return err
+			}
+			if len(res) == 0 {
+				return fmt.Errorf("No submitted update found for channel with id %s", channelID)
+			}
+			var sUpdate types.SubmittedUpdate
+			if err := cdc.UnmarshalJSON(res, &sUpdate); err != nil {
+				return err
+			}
 
-				// Get the channel from the node
-				res, err := cliCtx.QueryStore(paychan.GetChannelKey(id), paychanStoreName)
-				if len(res) == 0 || err != nil {
-					return errors.Errorf("channel with ID '%d' does not exist", id)
-				}
-				var channel paychan.Channel
-				cdc.MustUnmarshalBinary(res, &channel)
-
-				// Convert the channel to a json object for pretty printing
-				jsonChannel, err := codec.MarshalJSONIndent(cdc, channel)
-				if err != nil {
-					return err
-				}
-				// print out json channel
-				fmt.Println(string(jsonChannel))
-
-				// Get any submitted updates from the node
-				res, err = cliCtx.QueryStore(paychan.GetSubmittedUpdateKey(id), paychanStoreName)
-				if err != nil {
-					return err
-				}
-				// Print out the submitted update if it exists
-				if len(res) != 0 {
-					var submittedUpdate paychan.SubmittedUpdate
-					cdc.MustUnmarshalBinary(res, &submittedUpdate)
-
-					// Convert the submitted update to a json object for pretty printing
-					jsonSU, err := codec.MarshalJSONIndent(cdc, submittedUpdate)
-					if err != nil {
-						return err
-					}
-					// print out json submitted update
-					fmt.Println(string(jsonSU))
-				}
-				return nil
-			},
-		}
-		cmd.Flags().Int(flagId, 0, "ID of the payment channel.")
-		return cmd
-	*/
+			// Print result
+			return cliCtx.PrintOutput(sUpdate)
+		},
+	}
 }

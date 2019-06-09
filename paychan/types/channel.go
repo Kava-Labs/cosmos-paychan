@@ -83,6 +83,9 @@ type SubmittedUpdate struct {
 	ExecutionTime int64 // BlockHeight
 }
 
+// Implement fmt.Stringer interface for compatibility while sdk moves over to using yaml
+func (SubmittedUpdate) String() string { return "SUBMITTED UPDATE FORMATTING ERROR" }
+
 type SubmittedUpdatesQueue []ChannelID // not technically a queue
 
 // Check if value is in queue

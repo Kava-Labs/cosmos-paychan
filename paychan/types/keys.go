@@ -19,3 +19,8 @@ const (
 func GetChannelKey(channelID ChannelID) []byte {
 	return []byte(fmt.Sprintf("channel:%d", channelID))
 }
+
+// GetSubmittedUpdateKey returns the store key for the SubmittedUpdate corresponding to the channel with the given ID.
+func GetSubmittedUpdateKey(channelID ChannelID) []byte {
+	return []byte(fmt.Sprintf("submittedUpdate:%d", channelID))
+}
