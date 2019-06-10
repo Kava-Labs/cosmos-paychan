@@ -168,8 +168,8 @@ func TestKeeper(t *testing.T) {
 	t.Run("InitCloseChannelBySender", func(t *testing.T) {
 
 		// TODO do some documentation here
-		// Ideally this should mock calls to ctx.store.Get/Set - test the side effects without being dependent on implementatino details
-		// TODO test correct behaviour when a submittedUpdate already exists
+		// Ideally this should mock calls to ctx.store.Get/Set - test the side effects without being dependent on implementation details
+		// TODO test correct behavior when a submittedUpdate already exists
 
 		accountSeeds := []string{"senderSeed", "receiverSeed", "notInChannelSeed"}
 		const (
@@ -182,8 +182,8 @@ func TestKeeper(t *testing.T) {
 		type testUpdate struct { // A parameterised version of an Update for use in specifying test cases.
 			channelID          types.ChannelID // channelID of submitted update
 			payout             types.Payout    // payout of submitted update
-			pubKeyAccountIndex int       // pubkey of signature of submitted update
-			sigAccountIndex    int       // crypto signature of signature of submitted update
+			pubKeyAccountIndex int             // pubkey of signature of submitted update
+			sigAccountIndex    int             // crypto signature of signature of submitted update
 		}
 		testCases := []struct {
 			name                    string

@@ -88,11 +88,12 @@ All get request can be used with websockets to subscribe to changes
  	- can’t submit an update from an uninitialised account
 
 #### Code improvements
+ - add querier
  - pin to cosmos-sdk v0.36.0 once released
  - change channel id to unit64
  - split participants into sender and receiver
  - use iterator for channels for efficiency - rename queue
  - tidy up channel signatures - split off signatures from update as with txs/msgs, can auth sigs be used?
- - custom errors
+ - custom errors, codespace
  - tags
  - clarify naming - paychan vs channel, rename update

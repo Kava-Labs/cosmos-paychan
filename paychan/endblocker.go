@@ -14,7 +14,7 @@ func EndBlocker(ctx sdk.Context, k Keeper) sdk.Tags {
 	tags := sdk.EmptyTags()
 
 	// Iterate through submittedUpdatesQueue
-	// TODO optimise so it doesn't pull every channel update from DB every block
+	// TODO optimise by using store iterator
 	q := k.getSubmittedUpdatesQueue(ctx)
 	var sUpdate types.SubmittedUpdate
 	var found bool

@@ -12,10 +12,8 @@ import (
 
 // Setup an example app with an in memory DB and the required keepers
 // Also create two accounts with 1000usd
-// Could do with refactoring
 func createMockApp(accountSeeds []string) (sdk.Context, bank.Keeper, Keeper, []sdk.AccAddress, []crypto.PubKey, []crypto.PrivKey, sdk.Coins) {
 	mApp := mock.NewApp() // creates a half complete app
-	//bankKeeper := bank.NewKeeper(mApp.AccountMapper)
 	bankKeeper := bank.NewBaseKeeper(mApp.AccountKeeper, mApp.ParamsKeeper.Subspace(bank.DefaultParamspace), bank.DefaultCodespace)
 
 	// create channel keeper
@@ -41,7 +39,7 @@ func createMockApp(accountSeeds []string) (sdk.Context, bank.Keeper, Keeper, []s
 	return ctx, bankKeeper, channelKeeper, addrs, pubKeys, privKeys, genAccFunding
 }
 
-// CreateTestGenAccounts deterministically generates genesis accounts loaded with coins, and returns
+// createTestGenAccounts deterministically generates genesis accounts loaded with coins, and returns
 // their addresses, pubkeys, and privkeys.
 func createTestGenAccounts(accountSeeds []string, genCoins sdk.Coins) (genAccs []auth.Account, addrs []sdk.AccAddress, pubKeys []crypto.PubKey, privKeys []crypto.PrivKey) {
 	for _, seed := range accountSeeds {

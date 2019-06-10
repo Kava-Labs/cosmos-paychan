@@ -7,10 +7,8 @@ const (
 	ModuleName = "paychan"
 	// StoreKey is the store key string
 	StoreKey = ModuleName
-
 	// RouterKey is the message route
 	RouterKey = ModuleName
-
 	// QuerierRoute is the querier route
 	QuerierRoute = ModuleName
 )

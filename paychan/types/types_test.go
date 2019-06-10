@@ -46,7 +46,7 @@ func TestPayout(t *testing.T) {
 		p = Payout{cs(c("usd", 4), c("gbp", 0)), sdk.Coins{c("usd", 129879234), sdk.Coin{"gbp", i(-1)}}}
 		assert.True(t, p.IsAnyNegative())
 	})
-	
+
 	// TODO test IsValid
 }
 
@@ -106,7 +106,7 @@ func TestMsgSubmitUpdate(t *testing.T) {
 
 var _, testAddrs = mock.GeneratePrivKeyAddressPairs(10)
 
-// TODO change these to not use any input validation
+// TODO change these to create the raw types without validation
 func i(in int64) sdk.Int                    { return sdk.NewInt(in) }
 func c(denom string, amount int64) sdk.Coin { return sdk.NewInt64Coin(denom, amount) }
 func cs(coins ...sdk.Coin) sdk.Coins        { return sdk.NewCoins(coins...) }

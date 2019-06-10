@@ -63,7 +63,7 @@ func (msg MsgSubmitUpdate) ValidateBasic() sdk.Error {
 	}
 	// check id ≥ 0
 	if msg.Update.ChannelID < 0 {
-		return sdk.ErrInvalidAddress(strconv.Itoa(int(msg.ChannelID))) // TODO implement custom errors
+		return sdk.ErrInvalidAddress(strconv.Itoa(int(msg.ChannelID)))
 	}
 	// Check if coins are sorted, have valid denoms, non negative
 	if !msg.Update.Payout.IsValid() || msg.Update.Payout.IsAnyNegative() { // a payout can be zero

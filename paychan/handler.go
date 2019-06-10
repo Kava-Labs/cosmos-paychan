@@ -18,7 +18,7 @@ func NewHandler(k Keeper) sdk.Handler {
 		case types.MsgSubmitUpdate:
 			return handleMsgSubmitUpdate(ctx, k, msg)
 		default:
-			errMsg := fmt.Sprintf("unrecognized distribution message type: %T", msg)
+			errMsg := fmt.Sprintf("unrecognized %s message type: %T", ModuleName, msg)
 			return sdk.ErrUnknownRequest(errMsg).Result()
 		}
 	}
@@ -31,14 +31,12 @@ func handleMsgCreate(ctx sdk.Context, k Keeper, msg types.MsgCreate) sdk.Result 
 	if err != nil {
 		return err.Result()
 	}
-	// TODO any other information that should be returned in Result?
 	return sdk.Result{
 		Tags: tags,
 	}
 }
 
 // Handle MsgSubmitUpdate
-// Leaves validation to the keeper methods.
 func handleMsgSubmitUpdate(ctx sdk.Context, k Keeper, msg types.MsgSubmitUpdate) sdk.Result {
 	var err sdk.Error
 	tags := sdk.EmptyTags()

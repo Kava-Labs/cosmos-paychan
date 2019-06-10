@@ -10,16 +10,13 @@ import (
 	"github.com/kava-labs/cosmos-paychan/paychan/types"
 )
 
-// Keeper of the paychan store
+// Keeper contains the main business logic of the module.
 // Handles validation internally. Does not rely on calling code to do validation.
 // Aim to keep public methods safe, private ones not necessarily.
-// Keepers contain main business logic of the module.
 type Keeper struct {
 	storeKey   sdk.StoreKey
-	cdc        *codec.Codec // needed to serialize objects before putting them in the store
+	cdc        *codec.Codec
 	bankKeeper bank.Keeper
-
-	//codespace sdk.CodespaceType TODO custom errors
 }
 
 // NewKeeper returns a new payment channel keeper. This is called when creating new app.
@@ -28,7 +25,6 @@ func NewKeeper(cdc *codec.Codec, key sdk.StoreKey, bk bank.Keeper) Keeper {
 		storeKey:   key,
 		cdc:        cdc,
 		bankKeeper: bk,
-		//codespace:  codespace,
 	}
 	return keeper
 }
@@ -37,10 +33,10 @@ func NewKeeper(cdc *codec.Codec, key sdk.StoreKey, bk bank.Keeper) Keeper {
 func (k Keeper) CreateChannel(ctx sdk.Context, sender sdk.AccAddress, receiver sdk.AccAddress, coins sdk.Coins) (sdk.Tags, sdk.Error) {
 
 	// Check addresses valid (Technically don't need to check sender address is valid as SubtractCoins checks)
-	if len(sender) == 0 {
+	if sender.Empty() {
 		return nil, sdk.ErrInvalidAddress(sender.String())
 	}
-	if len(receiver) == 0 {
+	if receiver.Empty() {
 		return nil, sdk.ErrInvalidAddress(receiver.String())
 	}
 	// check coins are sorted and positive (disallow channels with zero balance)
@@ -101,7 +97,7 @@ func (k Keeper) InitCloseChannelBySender(ctx sdk.Context, update types.Update) (
 		// However in unidirectional case, only the sender can close a channel this way. No clear need for them to be able to submit an update replacing a previous one they sent, so don't allow it.
 		// TODO tags
 		// TODO custom errors
-		sdk.ErrInternal("Sender can't submit an update for channel if one has already been submitted.")
+		return nil, sdk.ErrInternal("Sender can't submit an update for channel if one has already been submitted.")
 	} else {
 		// No one has tried to update channel
 		submittedUpdate := types.SubmittedUpdate{
@@ -255,7 +251,6 @@ func (k Keeper) removeFromSubmittedUpdatesQueue(ctx sdk.Context, channelID types
 	// delete submittedUpdate
 	k.deleteSubmittedUpdate(ctx, channelID)
 }
-
 func (k Keeper) getSubmittedUpdatesQueue(ctx sdk.Context) types.SubmittedUpdatesQueue {
 	// load from DB
 	store := ctx.KVStore(k.storeKey)

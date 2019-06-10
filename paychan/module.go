@@ -92,7 +92,6 @@ func (am AppModule) NewHandler() sdk.Handler {
 	return NewHandler(am.keeper)
 }
 
-// TODO add querier
 // module querier route name
 func (AppModule) QuerierRoute() string { return "" }
 

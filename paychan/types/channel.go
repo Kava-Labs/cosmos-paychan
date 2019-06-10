@@ -7,7 +7,7 @@ import (
 	"github.com/tendermint/tendermint/crypto"
 )
 
-// Channel represents a payment channel in the paychan module.
+// Channel represents a payment channel.
 // Participants is limited to two as currently these are unidirectional channels.
 // Last participant is designated as receiver.
 type Channel struct {
@@ -16,7 +16,7 @@ type Channel struct {
 	Coins        sdk.Coins
 }
 
-// Implement fmt.Stringer interface for compatibility while sdk moves over to using yaml
+// Implement fmt.Stringer interface for compatibility while sdk moves over to using yaml // TODO
 func (Channel) String() string { return "CHANNEL FORMATTING ERROR" }
 
 const ChannelDisputeTime = int64(50000) // about 3 days measured in blocks // TODO add as param in channels
@@ -54,7 +54,13 @@ func (u Update) GetSignBytes() []byte {
 	return sdk.MustSortJSON(bz)
 }
 
-type Payout [2]sdk.Coins // a list of coins to be paid to each of Channel.Participants
+type UpdateSignature struct { // TODO rename to Signature
+	PubKey          crypto.PubKey
+	CryptoSignature []byte
+}
+
+// Payout is a list of coins to be paid to each of Channel.Participants
+type Payout [2]sdk.Coins
 
 func (p Payout) IsAnyNegative() bool {
 	for _, coins := range p {
@@ -80,18 +86,13 @@ func (p Payout) IsValid() bool {
 	return result
 }
 
-type UpdateSignature struct {
-	PubKey          crypto.PubKey
-	CryptoSignature []byte
-}
-
 // An update that has been submitted to the blockchain, but not yet acted on.
 type SubmittedUpdate struct {
 	Update
 	ExecutionTime int64 // BlockHeight
 }
 
-// Implement fmt.Stringer interface for compatibility while sdk moves over to using yaml
+// Implement fmt.Stringer interface for compatibility while sdk moves over to using yaml // TODO
 func (SubmittedUpdate) String() string { return "SUBMITTED UPDATE FORMATTING ERROR" }
 
 type SubmittedUpdatesQueue []ChannelID // not technically a queue
