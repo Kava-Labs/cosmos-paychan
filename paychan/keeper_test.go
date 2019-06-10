@@ -140,7 +140,7 @@ func TestKeeper(t *testing.T) {
 			// empty sig
 		}
 		cryptoSig, _ := privKeys[senderAccountIndex].Sign(update.GetSignBytes())
-		update.Sigs = [1]types.UpdateSignature{types.UpdateSignature{
+		update.Sigs = [1]types.UpdateSignature{{
 			PubKey:          pubKeys[senderAccountIndex],
 			CryptoSignature: cryptoSig,
 		}}
@@ -268,7 +268,7 @@ func TestKeeper(t *testing.T) {
 				}
 				// create update's signature
 				cryptoSig, _ := privKeys[testCase.updateToSubmit.sigAccountIndex].Sign(updateToSubmit.GetSignBytes())
-				updateToSubmit.Sigs = [1]types.UpdateSignature{types.UpdateSignature{
+				updateToSubmit.Sigs = [1]types.UpdateSignature{{
 					PubKey:          pubKeys[testCase.updateToSubmit.pubKeyAccountIndex],
 					CryptoSignature: cryptoSig,
 				}}

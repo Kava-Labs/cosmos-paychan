@@ -84,9 +84,9 @@ func TestMsgSubmitUpdate(t *testing.T) {
 		update     Update
 		expectPass bool
 	}{
-		{"happyPath", testAddrs[0], Update{0, Payout{cs(c("usd", 1000)), cs(c("gbp", 1000))}, [1]UpdateSignature{UpdateSignature{}}}, true},
-		{"negativeID", testAddrs[0], Update{-9999999, Payout{cs(c("usd", 1000)), cs(c("gbp", 1000))}, [1]UpdateSignature{UpdateSignature{}}}, false},
-		{"emptyAddr", sdk.AccAddress{}, Update{0, Payout{cs(c("usd", 1000)), cs(c("gbp", 1000))}, [1]UpdateSignature{UpdateSignature{}}}, false},
+		{"happyPath", testAddrs[0], Update{0, Payout{cs(c("usd", 1000)), cs(c("gbp", 1000))}, [1]UpdateSignature{{}}}, true},
+		{"negativeID", testAddrs[0], Update{-9999999, Payout{cs(c("usd", 1000)), cs(c("gbp", 1000))}, [1]UpdateSignature{{}}}, false},
+		{"emptyAddr", sdk.AccAddress{}, Update{0, Payout{cs(c("usd", 1000)), cs(c("gbp", 1000))}, [1]UpdateSignature{{}}}, false},
 	}
 
 	for _, tc := range tests {
