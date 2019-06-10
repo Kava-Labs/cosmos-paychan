@@ -19,7 +19,7 @@ type Channel struct {
 // Implement fmt.Stringer interface for compatibility while sdk moves over to using yaml
 func (Channel) String() string { return "CHANNEL FORMATTING ERROR" }
 
-const ChannelDisputeTime = int64(6) // measured in blocks TODO pick reasonable time, add to channel or genesis
+const ChannelDisputeTime = int64(50000) // about 3 days measured in blocks // TODO add as param in channels
 
 type ChannelID int64 // TODO swap for uint64
 
