@@ -1,7 +1,7 @@
 # PayChan - a Cosmos SDK module
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/kava-labs/cosmos-paychan)](https://goreportcard.com/report/github.com/kava-labs/cosmos-paychan)
-[![API Reference](https://godoc.org/github.com/kava-labs/cosmos-paychan?status.svg)](https://godoc.org/github.com/kava-labs/cosmos-paychan)
+[![API Reference](https://godoc.org/github.com/kava-labs/cosmos-paychan?status.svg)](https://godoc.org/github.com/kava-labs/cosmos-paychan/paychan)
 [![License](https://img.shields.io/github/license/kava-labs/cosmos-paychan.svg)](./LICENSE)
 
 *A Cosmos SDK module to add payment channels to any blockchain built using the SDK.*
