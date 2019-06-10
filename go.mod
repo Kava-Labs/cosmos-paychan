@@ -1,4 +1,4 @@
-module github.com/kava-labs/cosmos-sdk-paychan
+module github.com/kava-labs/cosmos-paychan
 
 go 1.12
 

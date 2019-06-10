@@ -15,7 +15,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/kava-labs/cosmos-sdk-paychan/paychan/types"
+	"github.com/kava-labs/cosmos-paychan/paychan/types"
 )
 
 // GetTxCmd returns the transaction commands for this module

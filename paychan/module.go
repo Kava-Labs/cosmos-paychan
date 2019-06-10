@@ -11,9 +11,9 @@ import (
 	"github.com/spf13/cobra"
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/kava-labs/cosmos-sdk-paychan/paychan/client/cli"
-	"github.com/kava-labs/cosmos-sdk-paychan/paychan/client/rest"
-	"github.com/kava-labs/cosmos-sdk-paychan/paychan/types"
+	"github.com/kava-labs/cosmos-paychan/paychan/client/cli"
+	"github.com/kava-labs/cosmos-paychan/paychan/client/rest"
+	"github.com/kava-labs/cosmos-paychan/paychan/types"
 )
 
 const (

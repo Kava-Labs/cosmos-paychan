@@ -6,7 +6,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/kava-labs/cosmos-sdk-paychan/paychan/types"
+	"github.com/kava-labs/cosmos-paychan/paychan/types"
 )
 
 func TestKeeper(t *testing.T) {

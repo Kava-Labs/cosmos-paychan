@@ -10,7 +10,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/rest"
 	"github.com/gorilla/mux"
 
-	"github.com/kava-labs/cosmos-sdk-paychan/paychan/types"
+	"github.com/kava-labs/cosmos-paychan/paychan/types"
 )
 
 func RegisterRoutes(cliCtx context.CLIContext, r *mux.Router, storeKey string) {

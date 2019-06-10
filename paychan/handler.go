@@ -5,7 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/kava-labs/cosmos-sdk-paychan/paychan/types"
+	"github.com/kava-labs/cosmos-paychan/paychan/types"
 )
 
 // NewHandler returns a handler for "paychan" type messages.
